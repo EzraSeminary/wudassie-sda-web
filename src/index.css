@@ -1,3 +1,277 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-[#0b0908] text-white antialiased;
+  }
+}
+
+@layer components {
+  .public-aurora {
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    background:
+      radial-gradient(circle at 16% 18%, rgba(255, 173, 65, 0.24), transparent 26%),
+      radial-gradient(circle at 78% 16%, rgba(170, 36, 130, 0.22), transparent 30%),
+      radial-gradient(circle at 74% 74%, rgba(98, 32, 108, 0.18), transparent 26%),
+      linear-gradient(180deg, #070606 0%, #130e0b 32%, #16110e 100%);
+  }
+
+  .public-grain {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    opacity: 0.05;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.25) 1px, transparent 1px);
+    background-size: 4px 4px, 4px 4px;
+    pointer-events: none;
+  }
+
+  .home-shell {
+    @apply relative overflow-hidden rounded-[40px] border border-white/10 bg-[radial-gradient(circle_at_15%_20%,rgba(255,173,65,0.16),transparent_30%),radial-gradient(circle_at_78%_18%,rgba(146,35,113,0.22),transparent_34%),linear-gradient(120deg,#120e0c_0%,#090807_40%,#1a0f1a_100%)] px-6 py-8 md:px-10 md:py-12 shadow-[0_30px_120px_rgba(0,0,0,0.45)];
+  }
+
+  .home-shell__outline {
+    @apply absolute inset-5 rounded-[34px] border border-white/10;
+  }
+
+  .glass-stat {
+    @apply rounded-3xl border border-white/10 bg-white/10 px-5 py-4 backdrop-blur-lg flex flex-col gap-1;
+  }
+
+  .glass-stat--dark {
+    @apply bg-white/5 border-white/10;
+  }
+
+  .hero-feature-card {
+    @apply flex items-start gap-4 rounded-3xl border border-white/10 bg-white/[0.04] px-5 py-4 backdrop-blur-md;
+  }
+
+  .instrument-stage {
+    @apply relative min-h-[640px];
+  }
+
+  .instrument-glow {
+    @apply absolute rounded-full blur-3xl;
+  }
+
+  .instrument-glow--amber {
+    @apply left-6 top-8 h-44 w-44 bg-[#ffb347]/35;
+  }
+
+  .instrument-glow--plum {
+    @apply right-8 top-0 h-72 w-72 bg-[#8f1d64]/35;
+  }
+
+  .instrument-orbit {
+    @apply absolute rounded-full border border-white/10;
+  }
+
+  .instrument-orbit--one {
+    @apply right-10 top-10 h-72 w-72;
+    transform: rotate(18deg);
+  }
+
+  .instrument-orbit--two {
+    @apply right-2 top-24 h-96 w-56;
+    transform: rotate(-18deg);
+  }
+
+  .hero-note {
+    @apply absolute text-[#ffcf70]/70 text-3xl font-semibold;
+    animation: float-note 4.5s ease-in-out infinite;
+  }
+
+  .hero-note--one {
+    @apply right-72 top-12;
+  }
+
+  .hero-note--two {
+    @apply right-12 top-56 text-[#ff9bd2]/60;
+    animation-delay: 700ms;
+  }
+
+  .hero-note--three {
+    @apply right-60 bottom-20 text-[#8dd5c0]/70;
+    animation-delay: 1200ms;
+  }
+
+  .guitar-illustration {
+    position: absolute;
+    right: 3rem;
+    top: 0.5rem;
+    width: 19rem;
+    height: 34rem;
+    transform: rotate(8deg);
+    filter: drop-shadow(0 28px 40px rgba(0, 0, 0, 0.45));
+    animation: sway-guitar 5.5s ease-in-out infinite;
+  }
+
+  .guitar-head {
+    position: absolute;
+    top: 0;
+    left: 8.7rem;
+    width: 2rem;
+    height: 5.5rem;
+    border-radius: 1.5rem;
+    background: linear-gradient(180deg, #ffcc72 0%, #9f5d1f 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  }
+
+  .guitar-neck {
+    position: absolute;
+    top: 4.5rem;
+    left: 8.95rem;
+    width: 1.45rem;
+    height: 13rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #4b2516 0%, #9e5b25 100%);
+  }
+
+  .guitar-body {
+    position: absolute;
+    left: 1.6rem;
+    top: 13.2rem;
+    width: 15.5rem;
+    height: 18rem;
+    border-radius: 48% 52% 44% 56% / 40% 42% 58% 60%;
+    background:
+      radial-gradient(circle at 45% 28%, rgba(255, 217, 140, 0.5), transparent 18%),
+      linear-gradient(180deg, #ffbb55 0%, #e37b27 44%, #5b181e 100%);
+    box-shadow:
+      inset -18px -24px 40px rgba(55, 9, 17, 0.45),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  }
+
+  .guitar-ring {
+    position: absolute;
+    left: 6rem;
+    top: 5rem;
+    width: 3.7rem;
+    height: 3.7rem;
+    border-radius: 999px;
+    border: 8px solid rgba(63, 14, 20, 0.85);
+    background: rgba(20, 7, 6, 0.8);
+  }
+
+  .guitar-bridge {
+    position: absolute;
+    left: 5.8rem;
+    bottom: 3.1rem;
+    width: 4.4rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #37110f 0%, #120809 100%);
+  }
+
+  .guitar-pickguard {
+    position: absolute;
+    right: 3.7rem;
+    top: 6.9rem;
+    width: 3.6rem;
+    height: 6.9rem;
+    border-radius: 58% 42% 53% 47% / 46% 54% 46% 54%;
+    background: linear-gradient(180deg, rgba(38, 10, 23, 0.85), rgba(12, 7, 8, 0.9));
+    transform: rotate(18deg);
+  }
+
+  .guitar-string {
+    position: absolute;
+    left: 9.2rem;
+    top: 1.2rem;
+    width: 1px;
+    height: 27rem;
+    background: linear-gradient(180deg, rgba(255, 243, 217, 0.7), rgba(255, 243, 217, 0.25));
+  }
+
+  .guitar-string--1 { transform: translateX(-8px); }
+  .guitar-string--2 { transform: translateX(-5px); }
+  .guitar-string--3 { transform: translateX(-2px); }
+  .guitar-string--4 { transform: translateX(1px); }
+  .guitar-string--5 { transform: translateX(4px); }
+  .guitar-string--6 { transform: translateX(7px); }
+
+  .piano-panel {
+    @apply absolute left-0 bottom-4 w-full max-w-[26rem] rounded-[34px] border border-white/10 bg-white/[0.06] p-6 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.28)];
+  }
+
+  .piano-label {
+    @apply inline-flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-[#d9c2a0];
+  }
+
+  .piano-keys {
+    @apply mt-6 flex rounded-[24px] border border-white/10 bg-[#0e0b0b] p-4;
+  }
+
+  .piano-key {
+    @apply relative h-28 flex-1 rounded-b-2xl border-r border-[#1d1715] bg-gradient-to-b from-[#fff9ef] to-[#d9d1c6];
+  }
+
+  .piano-key:last-child {
+    border-right: 0;
+  }
+
+  .piano-key__black {
+    @apply absolute -right-3 top-0 h-16 w-6 rounded-b-xl bg-gradient-to-b from-[#3a2b29] to-black;
+  }
+
+  .offer-card {
+    @apply rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_42px_rgba(0,0,0,0.2)] backdrop-blur-xl;
+  }
+
+  .offer-card h3 {
+    @apply mt-5 text-xl font-semibold text-white;
+  }
+
+  .offer-card p {
+    @apply mt-3 text-sm leading-7 text-[#cdbfb4];
+  }
+
+  .public-card {
+    @apply rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,#191311_0%,#110e0c_100%)] p-6 shadow-[0_14px_44px_rgba(0,0,0,0.22)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_22px_54px_rgba(0,0,0,0.3)];
+  }
+
+  .reveal-up {
+    animation: reveal-up 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sway-guitar {
+  0%, 100% {
+    transform: rotate(8deg) translateY(0);
+  }
+  50% {
+    transform: rotate(5deg) translateY(-8px);
+  }
+}
+
+@keyframes float-note {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+}

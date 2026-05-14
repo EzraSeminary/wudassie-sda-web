@@ -1,14 +1,15 @@
 import React from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Eye, Trash2 } from 'lucide-react';
 import { SDAHymn } from '../types/Song';
 
 interface SDATableProps {
   hymns: SDAHymn[];
+  onView: (hymn: SDAHymn) => void;
   onEdit: (hymn: SDAHymn) => void;
   onDelete: (hymn: SDAHymn) => void;
 }
 
-const SDATable: React.FC<SDATableProps> = ({ hymns, onEdit, onDelete }) => {
+const SDATable: React.FC<SDATableProps> = ({ hymns, onView, onEdit, onDelete }) => {
   // console.log('SDATable received hymns:', hymns.length, hymns.slice(0, 2));
   
   const formatLyrics = (lyrics: string) => {
@@ -44,24 +45,31 @@ const SDATable: React.FC<SDATableProps> = ({ hymns, onEdit, onDelete }) => {
           {hymns.map((hymn) => (
             <tr key={hymn.id} className="hover:bg-gray-50/50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
+                <button onClick={() => onView(hymn)} className="text-sm font-medium text-gray-900 max-w-xs truncate text-left hover:text-blue-700">
                   {hymn.newHymnalTitle}
-                </div>
+                </button>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900 max-w-xs truncate">
+                <button onClick={() => onView(hymn)} className="text-sm text-gray-900 max-w-xs truncate text-left hover:text-blue-700">
                   {hymn.englishTitleOld}
-                </div>
+                </button>
               </td>
               <td className="px-6 py-4">
-                <div className="text-sm text-gray-900 max-w-xs">
+                <button onClick={() => onView(hymn)} className="text-sm text-gray-900 max-w-xs text-left hover:text-blue-700">
                   <pre className="whitespace-pre-wrap font-sans text-xs">
                     {truncateText(hymn.newHymnalLyrics)}
                   </pre>
-                </div>
+                </button>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => onView(hymn)}
+                    className="text-cyan-600 hover:text-cyan-900 p-2 rounded-lg hover:bg-cyan-50 transition-colors"
+                    title="View hymn details"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => onEdit(hymn)}
                     className="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors"

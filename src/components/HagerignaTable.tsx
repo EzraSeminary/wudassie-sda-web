@@ -1,14 +1,15 @@
 import React from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Eye, Trash2 } from 'lucide-react';
 import { HagerignaHymn } from '../types/Song';
 
 interface HagerignaTableProps {
   hymns: HagerignaHymn[];
+  onView: (hymn: HagerignaHymn) => void;
   onEdit: (hymn: HagerignaHymn) => void;
   onDelete: (hymn: HagerignaHymn) => void;
 }
 
-const HagerignaTable: React.FC<HagerignaTableProps> = ({ hymns, onEdit, onDelete }) => {
+const HagerignaTable: React.FC<HagerignaTableProps> = ({ hymns, onView, onEdit, onDelete }) => {
   // console.log('HagerignaTable received hymns:', hymns.length, hymns.slice(0, 2));
   
   return (
@@ -34,16 +35,29 @@ const HagerignaTable: React.FC<HagerignaTableProps> = ({ hymns, onEdit, onDelete
           {hymns.map((hymn) => (
             <tr key={hymn.id} className="hover:bg-gray-50/50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">{hymn.artist}</div>
+                <button onClick={() => onView(hymn)} className="text-sm font-medium text-gray-900 hover:text-green-700 text-left">
+                  {hymn.artist}
+                </button>
               </td>
               <td className="px-6 py-4">
-                <div className="text-sm text-gray-900 max-w-xs truncate">{hymn.song}</div>
+                <button onClick={() => onView(hymn)} className="text-sm text-gray-900 max-w-xs truncate text-left hover:text-green-700">
+                  {hymn.song}
+                </button>
               </td>
               <td className="px-6 py-4">
-                <div className="text-sm text-gray-900 max-w-xs truncate">{hymn.title}</div>
+                <button onClick={() => onView(hymn)} className="text-sm text-gray-900 max-w-xs truncate text-left hover:text-green-700">
+                  {hymn.title}
+                </button>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => onView(hymn)}
+                    className="text-emerald-600 hover:text-emerald-900 p-2 rounded-lg hover:bg-emerald-50 transition-colors"
+                    title="View hymn details"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => onEdit(hymn)}
                     className="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors"

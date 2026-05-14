@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, X, X as XIcon } from 'lucide-react';
+import { Edit, X } from 'lucide-react';
 import Modal from './ui/Modal';
 import { HagerignaHymn, HYMN_CATEGORIES } from '../types/Song';
 import { hymnalService } from '../services/hymnalService';
@@ -124,11 +124,18 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
     }
   };
 
+  const handleRemoveAudio = () => {
+    setFormData(prev => ({ ...prev, audio: '' }));
+    if (errors.audio) {
+      setErrors(prev => ({ ...prev, audio: '' }));
+    }
+  };
+
   if (!hymn) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-t-2xl">
           <div className="flex items-center justify-between">
@@ -244,14 +251,14 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
                 {formData.sheet_music.length > 0 && (
                   <div className="space-y-2">
                     {formData.sheet_music.map((url, index) => (
-                      <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                      <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
                         <span className="flex-1 text-sm text-gray-700 truncate">{url}</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveImage(index)}
-                          className="p-1 text-red-600 hover:text-red-800"
+                          className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
                         >
-                          <XIcon className="w-4 h-4" />
+                          Delete
                         </button>
                       </div>
                     ))}
@@ -280,8 +287,15 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
                   <p className="text-sm text-gray-500">Uploading audio...</p>
                 )}
                 {formData.audio && (
-                  <div className="p-2 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-700 truncate">{formData.audio}</p>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="flex-1 text-sm text-gray-700 truncate">{formData.audio}</p>
+                    <button
+                      type="button"
+                      onClick={handleRemoveAudio}
+                      className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                    >
+                      Delete Audio
+                    </button>
                   </div>
                 )}
                 {errors.audio && (

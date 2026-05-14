@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { Music, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { Music, Lock, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-const LoginPage: React.FC = () => {
+interface LoginPageProps {
+  onBack?: () => void;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,6 +30,15 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-6 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to website
+          </button>
+        )}
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl shadow-lg mb-4">

@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import MusicDashboard from './components/MusicDashboard';
 import LoginPage from './components/LoginPage';
+import PublicLandingPage from './components/PublicLandingPage';
 import ToastProvider from './components/ui/Toaster';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { hymnalService } from './services/hymnalService';
 
 const AppContent: React.FC = () => {
   const { user, token, loading } = useAuth();
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   // Keep hymnalService token in sync
   useEffect(() => {
@@ -28,7 +30,11 @@ const AppContent: React.FC = () => {
   }
 
   if (!user) {
-    return <LoginPage />;
+    if (showAdminLogin) {
+      return <LoginPage onBack={() => setShowAdminLogin(false)} />;
+    }
+
+    return <PublicLandingPage onAdminLogin={() => setShowAdminLogin(true)} />;
   }
 
   return (

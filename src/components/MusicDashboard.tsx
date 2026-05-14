@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Music, Plus, Search, BookOpen, Heart, Youtube, Trash2, LogOut } from 'lucide-react';
+import { Music, Plus, BookOpen, Heart, Youtube, Trash2, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import HagerignaTable from './HagerignaTable';
 import SDATable from './SDATable';
+import HymnFilters, { HymnFilterState } from './HymnFilters';
+import HymnDetailModal from './HymnDetailModal';
 import AddHagerignaModal from './AddHagerignaModal';
 import AddSDAModal from './AddSDAModal';
 import EditHagerignaModal from './EditHagerignaModal';
@@ -11,7 +13,26 @@ import DeleteConfirmModal from './DeleteConfirmModal';
 import LoadingSpinner from './ui/LoadingSpinner';
 import { useToast } from './ui/Toaster';
 import { hymnalService } from '../services/hymnalService';
-import { HagerignaHymn, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
+import { Category, HagerignaHymn, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
+
+const extractVideoId = (url: string) => {
+  const trimmed = url.trim();
+  const shortMatch = trimmed.match(/(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (shortMatch) return shortMatch[1];
+  const watchMatch = trimmed.match(/(?:[?&])v=([a-zA-Z0-9_-]{11})/);
+  return watchMatch ? watchMatch[1] : null;
+};
+
+const normalizeYouTubeUrl = (url: string) => {
+  const videoId = extractVideoId(url);
+  return videoId ? `https://www.youtube.com/watch?v=${videoId}` : url.trim();
+};
+
+const defaultFilters: HymnFilterState = {
+  category: '',
+  hasAudio: 'all',
+  hasSheetMusic: 'all',
+};
 
 const MusicDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -23,6 +44,8 @@ const MusicDashboard: React.FC = () => {
   const [filteredSdaHymns, setFilteredSdaHymns] = useState<SDAHymn[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [filters, setFilters] = useState<HymnFilterState>(defaultFilters);
   const [youtubeLinks, setYoutubeLinks] = useState<YouTubeLink[]>([]);
   const [youtubeUrlInput, setYoutubeUrlInput] = useState('');
   const [youtubeAdding, setYoutubeAdding] = useState(false);
@@ -33,6 +56,8 @@ const MusicDashboard: React.FC = () => {
   const [showEditHagerignaModal, setShowEditHagerignaModal] = useState(false);
   const [showEditSDAModal, setShowEditSDAModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showHymnDetailModal, setShowHymnDetailModal] = useState(false);
+  const [detailHymnalType, setDetailHymnalType] = useState<HymnalType>('sda');
   
   // Selected items
   const [selectedHagerignaHymn, setSelectedHagerignaHymn] = useState<HagerignaHymn | null>(null);
@@ -70,6 +95,16 @@ const MusicDashboard: React.FC = () => {
     }
   }, [showToast]);
 
+  const loadCategories = useCallback(async () => {
+    try {
+      const categoryData = await hymnalService.getCategories();
+      setCategories(categoryData);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      showToast('Failed to load categories', 'error');
+    }
+  }, [showToast]);
+
   const handleAddYouTubeLink = async () => {
     const urls = youtubeUrlInput
       .split(/\s*[\n,]+\s*/)
@@ -83,21 +118,68 @@ const MusicDashboard: React.FC = () => {
 
     setYoutubeAdding(true);
     try {
-      const newLinks = urls.length === 1
-        ? [await hymnalService.addYouTubeLink({ url: urls[0] })]
-        : await hymnalService.addYouTubeLinks(urls);
+      const existingVideoIds = new Set(
+        youtubeLinks
+          .map((link) => link.videoId || extractVideoId(link.url))
+          .filter(Boolean)
+      );
+      const seenVideoIds = new Set<string>();
+      const duplicateUrls: string[] = [];
+      const uniqueUrls: string[] = [];
+
+      for (const url of urls) {
+        const videoId = extractVideoId(url);
+        const normalizedUrl = normalizeYouTubeUrl(url);
+
+        if (videoId && (existingVideoIds.has(videoId) || seenVideoIds.has(videoId))) {
+          duplicateUrls.push(normalizedUrl);
+          continue;
+        }
+
+        if (videoId) {
+          seenVideoIds.add(videoId);
+        }
+        uniqueUrls.push(url);
+      }
+
+      if (uniqueUrls.length === 0) {
+        showToast('That YouTube link is already there', 'error');
+        return;
+      }
+
+      let newLinks: YouTubeLink[] = [];
+      let serverDuplicates: string[] = [];
+
+      if (uniqueUrls.length === 1) {
+        const result = await hymnalService.addYouTubeLink({ url: uniqueUrls[0] });
+        newLinks = [result];
+        serverDuplicates = result.duplicates || [];
+      } else {
+        const result = await hymnalService.addYouTubeLinks(uniqueUrls);
+        newLinks = result.created;
+        serverDuplicates = result.duplicates;
+      }
+
+      const skippedCount = new Set([...duplicateUrls, ...serverDuplicates]).size;
 
       setYoutubeLinks((prev) => [...newLinks, ...prev]);
       setYoutubeUrlInput('');
-      showToast(
-        newLinks.length === 1
-          ? 'YouTube link added with details'
-          : `${newLinks.length} YouTube links added with details`,
-        'success'
-      );
+
+      if (newLinks.length > 0) {
+        const addedMessage = newLinks.length === 1
+          ? '1 YouTube link added with details'
+          : `${newLinks.length} YouTube links added with details`;
+        const skippedMessage = skippedCount > 0
+          ? ` ${skippedCount} duplicate link${skippedCount === 1 ? ' was' : 's were'} skipped.`
+          : '';
+        showToast(`${addedMessage}.${skippedMessage}`.trim(), 'success');
+      }
     } catch (error) {
       console.error('Failed to add YouTube link:', error);
-      showToast('Failed to add YouTube link', 'error');
+      showToast(
+        error instanceof Error ? error.message : 'Failed to add YouTube link',
+        'error'
+      );
     } finally {
       setYoutubeAdding(false);
     }
@@ -114,37 +196,6 @@ const MusicDashboard: React.FC = () => {
     }
   };
 
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-    
-    if (!query.trim()) {
-      setFilteredHagerignaHymns(hagerignaHymns);
-      setFilteredSdaHymns(sdaHymns);
-      return;
-    }
-
-    const lowerQuery = query.toLowerCase();
-    
-    // Filter Hagerigna hymns
-    const filteredHagerigna = hagerignaHymns.filter(hymn =>
-      hymn.artist.toLowerCase().includes(lowerQuery) ||
-      hymn.song.toLowerCase().includes(lowerQuery) ||
-      hymn.title.toLowerCase().includes(lowerQuery)
-    );
-    
-    // Filter SDA hymns
-    const filteredSDA = sdaHymns.filter(hymn =>
-      hymn.newHymnalTitle.toLowerCase().includes(lowerQuery) ||
-      hymn.oldHymnalTitle.toLowerCase().includes(lowerQuery) ||
-      hymn.englishTitleOld.toLowerCase().includes(lowerQuery) ||
-      hymn.newHymnalLyrics.toLowerCase().includes(lowerQuery) ||
-      hymn.oldHymnalLyrics.toLowerCase().includes(lowerQuery)
-    );
-    
-    setFilteredHagerignaHymns(filteredHagerigna);
-    setFilteredSdaHymns(filteredSDA);
-  }, [hagerignaHymns, sdaHymns]);
-
   useEffect(() => {
     loadHymns();
   }, [loadHymns]);
@@ -154,8 +205,47 @@ const MusicDashboard: React.FC = () => {
   }, [loadYouTubeLinks]);
 
   useEffect(() => {
-    handleSearch(searchQuery);
-  }, [searchQuery, handleSearch, activeHymnal]);
+    loadCategories();
+  }, [loadCategories]);
+
+  useEffect(() => {
+    const lowerQuery = searchQuery.trim().toLowerCase();
+
+    const matchesCommonFilters = (category?: string, audio?: string, sheetMusic?: string[]) => {
+      if (filters.category && (category || '') !== filters.category) return false;
+      if (filters.hasAudio === 'yes' && !audio) return false;
+      if (filters.hasAudio === 'no' && !!audio) return false;
+      const hasSheetMusic = Boolean(sheetMusic && sheetMusic.length > 0);
+      if (filters.hasSheetMusic === 'yes' && !hasSheetMusic) return false;
+      if (filters.hasSheetMusic === 'no' && hasSheetMusic) return false;
+      return true;
+    };
+
+    const filteredHagerigna = hagerignaHymns.filter((hymn) => {
+      const matchesSearch =
+        lowerQuery.length === 0 ||
+        hymn.artist.toLowerCase().includes(lowerQuery) ||
+        hymn.song.toLowerCase().includes(lowerQuery) ||
+        hymn.title.toLowerCase().includes(lowerQuery);
+
+      return matchesSearch && matchesCommonFilters(hymn.category, hymn.audio, hymn.sheet_music);
+    });
+
+    const filteredSda = sdaHymns.filter((hymn) => {
+      const matchesSearch =
+        lowerQuery.length === 0 ||
+        hymn.newHymnalTitle.toLowerCase().includes(lowerQuery) ||
+        hymn.oldHymnalTitle.toLowerCase().includes(lowerQuery) ||
+        hymn.englishTitleOld.toLowerCase().includes(lowerQuery) ||
+        hymn.newHymnalLyrics.toLowerCase().includes(lowerQuery) ||
+        hymn.oldHymnalLyrics.toLowerCase().includes(lowerQuery);
+
+      return matchesSearch && matchesCommonFilters(hymn.category, hymn.audio, hymn.sheet_music);
+    });
+
+    setFilteredHagerignaHymns(filteredHagerigna);
+    setFilteredSdaHymns(filteredSda);
+  }, [searchQuery, filters, hagerignaHymns, sdaHymns]);
 
   // Hagerigna hymn handlers
   const handleAddHagerignaHymn = async (hymnData: Omit<HagerignaHymn, 'id'>) => {
@@ -263,6 +353,24 @@ const MusicDashboard: React.FC = () => {
       setSelectedHagerignaHymn(null);
     }
     setShowDeleteModal(true);
+  };
+
+  const openHymnDetails = (hymn: HagerignaHymn | SDAHymn, type: HymnalType) => {
+    setDetailHymnalType(type);
+    if (type === 'hagerigna') {
+      setSelectedHagerignaHymn(hymn as HagerignaHymn);
+      setSelectedSDAHymn(null);
+    } else {
+      setSelectedSDAHymn(hymn as SDAHymn);
+      setSelectedHagerignaHymn(null);
+    }
+    setShowHymnDetailModal(true);
+  };
+
+  const closeHymnDetails = () => {
+    setShowHymnDetailModal(false);
+    setSelectedHagerignaHymn(null);
+    setSelectedSDAHymn(null);
   };
 
   const handleDeleteConfirm = async () => {
@@ -383,20 +491,20 @@ const MusicDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Search Bar */}
+        {/* Search and Filters */}
         {activeSection !== 'youtube' && (
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 mb-6">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder={`Search ${activeHymnal === 'sda' ? 'SDA hymns' : 'Hagerigna hymns'}...`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-          </div>
+          <HymnFilters
+            hymnLabel={activeHymnal === 'sda' ? 'SDA hymns' : 'Hagerigna hymns'}
+            categories={categories}
+            searchQuery={searchQuery}
+            filters={filters}
+            onSearchChange={setSearchQuery}
+            onFilterChange={setFilters}
+            onClear={() => {
+              setSearchQuery('');
+              setFilters(defaultFilters);
+            }}
+          />
         )}
 
         {/* YouTube Links */}
@@ -509,12 +617,14 @@ const MusicDashboard: React.FC = () => {
           ) : activeHymnal === 'hagerigna' ? (
             <HagerignaTable
               hymns={filteredHagerignaHymns}
+              onView={(hymn: HagerignaHymn) => openHymnDetails(hymn, 'hagerigna')}
               onEdit={openEditHagerignaModal}
               onDelete={(hymn: HagerignaHymn) => openDeleteModal(hymn, 'hagerigna')}
             />
           ) : (
             <SDATable
               hymns={filteredSdaHymns}
+              onView={(hymn: SDAHymn) => openHymnDetails(hymn, 'sda')}
               onEdit={openEditSDAModal}
               onDelete={(hymn: SDAHymn) => openDeleteModal(hymn, 'sda')}
             />
@@ -566,6 +676,13 @@ const MusicDashboard: React.FC = () => {
           setSelectedSDAHymn(null);
         }}
         onConfirm={handleDeleteConfirm}
+      />
+
+      <HymnDetailModal
+        isOpen={showHymnDetailModal}
+        hymn={detailHymnalType === 'hagerigna' ? selectedHagerignaHymn : selectedSDAHymn}
+        type={detailHymnalType}
+        onClose={closeHymnDetails}
       />
     </div>
   );

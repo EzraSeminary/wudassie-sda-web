@@ -49,6 +49,13 @@ export interface YouTubeLink {
   createdAt?: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+}
+
 export const HYMN_CATEGORIES = [
   'Worship',
   'Praise',

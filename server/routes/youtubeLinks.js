@@ -13,6 +13,12 @@ const isYouTubeUrl = (url) => {
 	return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(value);
 };
 
+const normalizeYouTubeUrl = (url) => {
+	const value = String(url || "").trim();
+	const videoId = extractVideoId(value);
+	return videoId ? `https://www.youtube.com/watch?v=${videoId}` : value;
+};
+
 /** Extract video ID from youtube.com/watch?v=ID or youtu.be/ID */
 function extractVideoId(url) {
 	const u = String(url || "").trim();
@@ -145,6 +151,8 @@ const buildYouTubeLink = async (videoUrl) => {
 		throw new Error("Could not extract video ID from URL");
 	}
 
+	const normalizedUrl = normalizeYouTubeUrl(videoUrl);
+
 	const apiKey = process.env.YOUTUBE_API_KEY;
 	let metadata = await fetchYoutubeMetadata(videoId, apiKey);
 	if (!metadata) {
@@ -162,7 +170,7 @@ const buildYouTubeLink = async (videoUrl) => {
 
 	return {
 		id: `yt-${uuidv4()}`,
-		url: videoUrl,
+		url: normalizedUrl,
 		videoId,
 		title: metadata.title != null && metadata.title !== "" ? String(metadata.title) : "Unknown",
 		channelTitle: metadata.channelTitle != null ? String(metadata.channelTitle) : "",
@@ -226,8 +234,40 @@ router.post("/youtube-links", requireAuth, async (req, res) => {
 			return res.status(400).json({ error: `Invalid YouTube URL: ${invalidUrl}` });
 		}
 
-		const newLinks = [];
+		const existingLinks = await readLinks();
+		const existingVideoIds = new Set(
+			existingLinks
+				.map((link) => link.videoId || extractVideoId(link.url))
+				.filter(Boolean)
+		);
+		const seenVideoIds = new Set();
+		const acceptedUrls = [];
+		const duplicateUrls = [];
+
 		for (const videoUrl of requestedUrls) {
+			const videoId = extractVideoId(videoUrl);
+			if (!videoId) {
+				return res.status(400).json({ error: "Could not extract video ID from URL" });
+			}
+
+			if (existingVideoIds.has(videoId) || seenVideoIds.has(videoId)) {
+				duplicateUrls.push(normalizeYouTubeUrl(videoUrl));
+				continue;
+			}
+
+			seenVideoIds.add(videoId);
+			acceptedUrls.push(videoUrl);
+		}
+
+		if (acceptedUrls.length === 0) {
+			return res.status(409).json({
+				error: "That YouTube link is already there",
+				duplicates: duplicateUrls,
+			});
+		}
+
+		const newLinks = [];
+		for (const videoUrl of acceptedUrls) {
 			newLinks.push(await buildYouTubeLink(videoUrl));
 		}
 
@@ -242,13 +282,17 @@ router.post("/youtube-links", requireAuth, async (req, res) => {
 		}
 
 		if (newLinks.length === 1) {
-			return res.status(201).json(newLinks[0]);
+			return res.status(201).json({
+				...newLinks[0],
+				duplicates: duplicateUrls,
+			});
 		}
 
 		return res.status(201).json({
 			success: true,
 			count: newLinks.length,
 			data: newLinks,
+			duplicates: duplicateUrls,
 		});
 	} catch (error) {
 		console.error("Error adding YouTube link:", error);

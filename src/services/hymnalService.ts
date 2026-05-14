@@ -1,5 +1,14 @@
-import { HagerignaHymn, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
+import { Category, HagerignaHymn, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
 import { API_BASE_URL } from '../config/api';
+
+interface AddYouTubeLinkResponse extends YouTubeLink {
+  duplicates?: string[];
+}
+
+interface AddYouTubeLinksResult {
+  created: YouTubeLink[];
+  duplicates: string[];
+}
 
 class HymnalService {
   private baseUrl = API_BASE_URL;
@@ -223,7 +232,20 @@ class HymnalService {
     }
   }
 
-  async addYouTubeLink(payload: { url: string }): Promise<YouTubeLink> {
+  async getCategories(): Promise<Category[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/categories`, this.fetchOptions);
+      if (!response.ok) {
+        throw new Error('Failed to fetch categories');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
+  }
+
+  async addYouTubeLink(payload: { url: string }): Promise<AddYouTubeLinkResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/youtube-links`, {
         ...this.fetchOptions,
@@ -251,12 +273,16 @@ class HymnalService {
     }
   }
 
-  async addYouTubeLinks(urls: string[]): Promise<YouTubeLink[]> {
+  async addYouTubeLinks(urls: string[]): Promise<AddYouTubeLinksResult> {
     const created: YouTubeLink[] = [];
+    const duplicates: string[] = [];
     for (const url of urls) {
       try {
         const link = await this.addYouTubeLink({ url });
         created.push(link);
+        if (Array.isArray(link.duplicates) && link.duplicates.length > 0) {
+          duplicates.push(...link.duplicates);
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to add YouTube links';
         const failedAfter = created.length;
@@ -268,7 +294,7 @@ class HymnalService {
       }
     }
 
-    return created;
+    return { created, duplicates };
   }
 
   async deleteYouTubeLink(id: string): Promise<void> {
