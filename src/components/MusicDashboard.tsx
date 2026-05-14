@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Music, Plus, Search, BookOpen, Heart, Youtube, Trash2 } from 'lucide-react';
+import { Music, Plus, Search, BookOpen, Heart, Youtube, Trash2, LogOut } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import HagerignaTable from './HagerignaTable';
 import SDATable from './SDATable';
 import AddHagerignaModal from './AddHagerignaModal';
@@ -13,6 +14,7 @@ import { hymnalService } from '../services/hymnalService';
 import { HagerignaHymn, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
 
 const MusicDashboard: React.FC = () => {
+  const { user, logout } = useAuth();
   const [activeSection, setActiveSection] = useState<'sda' | 'hagerigna' | 'youtube'>('sda');
   const [activeHymnal, setActiveHymnal] = useState<HymnalType>('sda');
   const [hagerignaHymns, setHagerignaHymns] = useState<HagerignaHymn[]>([]);
@@ -69,17 +71,30 @@ const MusicDashboard: React.FC = () => {
   }, [showToast]);
 
   const handleAddYouTubeLink = async () => {
-    if (!youtubeUrlInput.trim()) {
-      showToast('YouTube URL is required', 'error');
+    const urls = youtubeUrlInput
+      .split(/\s*[\n,]+\s*/)
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (urls.length === 0) {
+      showToast('At least one YouTube URL is required', 'error');
       return;
     }
 
     setYoutubeAdding(true);
     try {
-      const newLink = await hymnalService.addYouTubeLink({ url: youtubeUrlInput.trim() });
-      setYoutubeLinks((prev) => [newLink, ...prev]);
+      const newLinks = urls.length === 1
+        ? [await hymnalService.addYouTubeLink({ url: urls[0] })]
+        : await hymnalService.addYouTubeLinks(urls);
+
+      setYoutubeLinks((prev) => [...newLinks, ...prev]);
       setYoutubeUrlInput('');
-      showToast('YouTube link added with details', 'success');
+      showToast(
+        newLinks.length === 1
+          ? 'YouTube link added with details'
+          : `${newLinks.length} YouTube links added with details`,
+        'success'
+      );
     } catch (error) {
       console.error('Failed to add YouTube link:', error);
       showToast('Failed to add YouTube link', 'error');
@@ -296,17 +311,28 @@ const MusicDashboard: React.FC = () => {
               </div>
             </div>
             
-            {activeSection !== 'youtube' && (
-              <div className="flex items-center gap-3">
-              <button
-                onClick={() => activeHymnal === 'hagerigna' ? setShowAddHagerignaModal(true) : setShowAddSDAModal(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
-              >
-                <Plus className="w-5 h-5" />
-                Add Hymn
-              </button>
+            <div className="flex items-center gap-3">
+              {activeSection !== 'youtube' && (
+                <button
+                  onClick={() => activeHymnal === 'hagerigna' ? setShowAddHagerignaModal(true) : setShowAddSDAModal(true)}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Hymn
+                </button>
+              )}
+              <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
+                <span className="text-sm text-gray-500 hidden sm:block">{user?.email}</span>
+                <button
+                  onClick={logout}
+                  title="Sign out"
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:block">Sign out</span>
+                </button>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
@@ -383,21 +409,25 @@ const MusicDashboard: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap gap-3 mb-4">
-            <input
-              type="text"
-              placeholder="Paste YouTube URL (title, channel, duration will be fetched automatically)"
+            <textarea
+              rows={4}
+              placeholder="Paste one or more YouTube URLs. Use a new line or comma between links."
               value={youtubeUrlInput}
               onChange={(e) => setYoutubeUrlInput(e.target.value)}
-              className="flex-1 min-w-[200px] px-4 py-3 bg-white/60 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="flex-1 min-w-[200px] px-4 py-3 bg-white/60 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 resize-y"
             />
             <button
               onClick={handleAddYouTubeLink}
               disabled={youtubeAdding || !youtubeUrlInput.trim()}
               className="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             >
-              {youtubeAdding ? 'Adding…' : 'Add Link'}
+              {youtubeAdding ? 'Adding…' : 'Add Link(s)'}
             </button>
           </div>
+
+          <p className="text-sm text-gray-500 mb-4">
+            Add one link or paste multiple links at once. Each link will be saved separately.
+          </p>
 
           {youtubeLinks.length === 0 ? (
             <p className="text-sm text-gray-500">No YouTube links added yet. Paste a URL and click Add Link; title, channel, and duration will be saved automatically.</p>

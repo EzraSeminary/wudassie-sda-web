@@ -8,6 +8,7 @@ import songRoutes from "./routes/songs.js";
 import hymnRoutes from "./routes/hymns.js";
 import uploadRoutes from "./routes/upload.js";
 import youtubeLinksRoutes from "./routes/youtubeLinks.js";
+import authRoutes, { seedAdminUser } from "./routes/auth.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { connectToMongo } from "./db/mongo.js";
 
@@ -104,9 +105,12 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // Connect to MongoDB if MONGODB_URI is set (for production / persistent YouTube links)
-connectToMongo().catch((err) => console.error("Mongo connect error:", err));
+connectToMongo()
+	.then(() => seedAdminUser())
+	.catch((err) => console.error("Mongo connect error:", err));
 
 // Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/songs", songRoutes);
 app.use("/api", hymnRoutes);
 app.use("/api/upload", uploadRoutes);

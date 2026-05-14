@@ -2,6 +2,7 @@ import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import database from '../database/memoryDb.js';
 import Song from '../models/Song.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -75,7 +76,7 @@ router.get('/:id', [
 });
 
 // POST /api/songs - Add a new song
-router.post('/', [
+router.post('/', requireAuth, [
   body('title').isString().trim().notEmpty().withMessage('Title is required'),
   body('artist').isString().trim().notEmpty().withMessage('Artist is required'),
   body('album').isString().trim().notEmpty().withMessage('Album is required'),
@@ -111,7 +112,7 @@ router.post('/', [
 });
 
 // PUT /api/songs/:id - Update an existing song
-router.put('/:id', [
+router.put('/:id', requireAuth, [
   param('id').isString().notEmpty(),
   body('title').optional().isString().trim().notEmpty(),
   body('artist').optional().isString().trim().notEmpty(),
@@ -156,7 +157,7 @@ router.put('/:id', [
 });
 
 // DELETE /api/songs/:id - Delete a song
-router.delete('/:id', [
+router.delete('/:id', requireAuth, [
   param('id').isString().notEmpty()
 ], handleValidationErrors, (req, res) => {
   try {

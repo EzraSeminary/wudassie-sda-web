@@ -1,5 +1,6 @@
 import express from "express";
 import { v4 as uuidv4 } from "uuid";
+import { requireAuth } from "../middleware/auth.js";
 import {
 	readJsonFile,
 	appendToHagerignaFile,
@@ -237,7 +238,7 @@ router.get("/sda", async (req, res) => {
 	}
 });
 
-router.post("/hagerigna", async (req, res) => {
+router.post("/hagerigna", requireAuth, async (req, res) => {
 	try {
 		if (!isMongoConnected()) {
 			const savedHymn = await appendToHagerignaFile(req.body);
@@ -261,7 +262,7 @@ router.post("/hagerigna", async (req, res) => {
 	}
 });
 
-router.post("/sda", async (req, res) => {
+router.post("/sda", requireAuth, async (req, res) => {
 	try {
 		if (!isMongoConnected()) {
 			const savedHymn = await appendToSDAFile(req.body);
@@ -287,7 +288,7 @@ router.post("/sda", async (req, res) => {
 	}
 });
 
-router.put("/hagerigna/:id", async (req, res) => {
+router.put("/hagerigna/:id", requireAuth, async (req, res) => {
 	try {
 		if (!isMongoConnected()) {
 			const updatedHymn = await updateHagerignaFile(req.params.id, req.body);
@@ -315,7 +316,7 @@ router.put("/hagerigna/:id", async (req, res) => {
 	}
 });
 
-router.put("/sda/:id", async (req, res) => {
+router.put("/sda/:id", requireAuth, async (req, res) => {
 	try {
 		if (!isMongoConnected()) {
 			const updatedHymn = await updateSDAFile(req.params.id, req.body);
@@ -345,7 +346,7 @@ router.put("/sda/:id", async (req, res) => {
 	}
 });
 
-router.delete("/hagerigna/:id", async (req, res) => {
+router.delete("/hagerigna/:id", requireAuth, async (req, res) => {
 	try {
 		if (!isMongoConnected()) {
 			await deleteFromHagerignaFile(req.params.id);
@@ -360,7 +361,7 @@ router.delete("/hagerigna/:id", async (req, res) => {
 	}
 });
 
-router.delete("/sda/:id", async (req, res) => {
+router.delete("/sda/:id", requireAuth, async (req, res) => {
 	try {
 		if (!isMongoConnected()) {
 			await deleteFromSDAFile(req.params.id);

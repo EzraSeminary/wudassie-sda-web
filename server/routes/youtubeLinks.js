@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { readJsonFileOrDefault, writeJsonFile } from "../utils/fileUtils.js";
 import { isMongoConnected } from "../db/mongo.js";
 import YouTubeLinkModel from "../models/YouTubeLink.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 const YOUTUBE_FILE = "YouTubeLinks.json";
@@ -94,71 +95,171 @@ const readLinks = async () => {
 	return Array.isArray(data) ? data : [];
 };
 
+const getDefaultThumbnailUrl = (videoId) =>
+	videoId ? `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg` : null;
+
+const hydrateStoredLink = async (link) => {
+	const normalizedUrl = String(link?.url || "").trim();
+	const videoId = link?.videoId || extractVideoId(normalizedUrl) || "";
+	let title = link?.title != null ? String(link.title) : "";
+	let channelTitle = link?.channelTitle != null ? String(link.channelTitle) : "";
+	let duration = link?.duration != null ? String(link.duration) : null;
+	let thumbnailUrl = link?.thumbnailUrl != null ? String(link.thumbnailUrl) : null;
+	let description = link?.description != null ? String(link.description) : null;
+
+	const needsMetadata = (!title || !thumbnailUrl || !videoId) && normalizedUrl;
+	if (needsMetadata) {
+		const apiKey = process.env.YOUTUBE_API_KEY;
+		let metadata = videoId ? await fetchYoutubeMetadata(videoId, apiKey) : null;
+		if (!metadata) {
+			metadata = await fetchYoutubeOEmbed(normalizedUrl);
+		}
+		if (metadata) {
+			if (!title && metadata.title) title = String(metadata.title);
+			if (!channelTitle && metadata.channelTitle) channelTitle = String(metadata.channelTitle);
+			if (!duration && metadata.duration) duration = String(metadata.duration);
+			if (!thumbnailUrl && metadata.thumbnailUrl) thumbnailUrl = String(metadata.thumbnailUrl);
+			if (!description && metadata.description) description = String(metadata.description);
+		}
+	}
+
+	if (!thumbnailUrl) {
+		thumbnailUrl = getDefaultThumbnailUrl(videoId);
+	}
+
+	return {
+		...link,
+		url: normalizedUrl,
+		videoId,
+		title: title || "Unknown",
+		channelTitle,
+		duration,
+		thumbnailUrl,
+		description,
+	};
+};
+
+const buildYouTubeLink = async (videoUrl) => {
+	const videoId = extractVideoId(videoUrl);
+	if (!videoId) {
+		throw new Error("Could not extract video ID from URL");
+	}
+
+	const apiKey = process.env.YOUTUBE_API_KEY;
+	let metadata = await fetchYoutubeMetadata(videoId, apiKey);
+	if (!metadata) {
+		metadata = await fetchYoutubeOEmbed(videoUrl);
+	}
+	if (!metadata) {
+		metadata = {
+			title: "",
+			channelTitle: "",
+			duration: null,
+			thumbnailUrl: null,
+			description: null,
+		};
+	}
+
+	return {
+		id: `yt-${uuidv4()}`,
+		url: videoUrl,
+		videoId,
+		title: metadata.title != null && metadata.title !== "" ? String(metadata.title) : "Unknown",
+		channelTitle: metadata.channelTitle != null ? String(metadata.channelTitle) : "",
+		duration: metadata.duration != null ? String(metadata.duration) : null,
+		thumbnailUrl: metadata.thumbnailUrl != null ? String(metadata.thumbnailUrl) : null,
+		description: metadata.description != null ? String(metadata.description) : null,
+		createdAt: new Date().toISOString(),
+	};
+};
+
 router.get("/youtube-links", async (req, res) => {
 	try {
 		const links = await readLinks();
-		res.json(links);
+		const hydratedLinks = await Promise.all(links.map((link) => hydrateStoredLink(link)));
+
+		if (isMongoConnected()) {
+			await Promise.all(
+				hydratedLinks.map((link) =>
+					YouTubeLinkModel.updateOne(
+						{ id: link.id },
+						{
+							$set: {
+								url: link.url,
+								videoId: link.videoId,
+								title: link.title,
+								channelTitle: link.channelTitle,
+								duration: link.duration,
+								thumbnailUrl: link.thumbnailUrl,
+								description: link.description,
+							},
+						}
+					)
+				)
+			);
+		} else if (JSON.stringify(hydratedLinks) !== JSON.stringify(links)) {
+			await writeJsonFile(YOUTUBE_FILE, hydratedLinks);
+		}
+
+		res.json(hydratedLinks);
 	} catch (error) {
 		console.error("Error fetching YouTube links:", error);
 		res.status(500).json({ error: "Failed to fetch YouTube links" });
 	}
 });
 
-router.post("/youtube-links", async (req, res) => {
+router.post("/youtube-links", requireAuth, async (req, res) => {
 	try {
-		const { url } = req.body || {};
-		const videoUrl = url ? String(url).trim() : "";
+		const { url, urls } = req.body || {};
+		const requestedUrls = Array.isArray(urls)
+			? urls.map((item) => String(item || "").trim()).filter(Boolean)
+			: url
+				? [String(url).trim()]
+				: [];
 
-		if (!videoUrl || !isYouTubeUrl(videoUrl)) {
-			return res
-				.status(400)
-				.json({ error: "Please provide a valid YouTube URL" });
+		if (requestedUrls.length === 0) {
+			return res.status(400).json({ error: "Please provide at least one YouTube URL" });
 		}
 
-		const videoId = extractVideoId(videoUrl);
-		if (!videoId) {
-			return res.status(400).json({ error: "Could not extract video ID from URL" });
+		const invalidUrl = requestedUrls.find((videoUrl) => !isYouTubeUrl(videoUrl));
+		if (invalidUrl) {
+			return res.status(400).json({ error: `Invalid YouTube URL: ${invalidUrl}` });
 		}
 
-		const apiKey = process.env.YOUTUBE_API_KEY;
-		let metadata = await fetchYoutubeMetadata(videoId, apiKey);
-		if (!metadata) {
-			metadata = await fetchYoutubeOEmbed(videoUrl);
+		const newLinks = [];
+		for (const videoUrl of requestedUrls) {
+			newLinks.push(await buildYouTubeLink(videoUrl));
 		}
-		if (!metadata) {
-			metadata = { title: "", channelTitle: "", duration: null, thumbnailUrl: null, description: null };
-		}
-
-		const newLink = {
-			id: `yt-${uuidv4()}`,
-			url: videoUrl,
-			videoId: videoId,
-			title: metadata.title != null && metadata.title !== "" ? String(metadata.title) : "Unknown",
-			channelTitle: metadata.channelTitle != null ? String(metadata.channelTitle) : "",
-			duration: metadata.duration != null ? String(metadata.duration) : null,
-			thumbnailUrl: metadata.thumbnailUrl != null ? String(metadata.thumbnailUrl) : null,
-			description: metadata.description != null ? String(metadata.description) : null,
-			createdAt: new Date().toISOString(),
-		};
 
 		if (isMongoConnected()) {
-			await YouTubeLinkModel.create(newLink);
-			console.log("YouTube link saved to MongoDB:", newLink.id, newLink.title);
-			return res.status(201).json(newLink);
+			await YouTubeLinkModel.insertMany(newLinks, { ordered: true });
+			console.log("YouTube links saved to MongoDB:", newLinks.map((link) => link.id).join(", "));
+		} else {
+			const links = await readLinks();
+			links.unshift(...newLinks);
+			await writeJsonFile(YOUTUBE_FILE, links);
+			console.log("YouTube links saved to JSON:", newLinks.map((link) => link.id).join(", "));
 		}
 
-		const links = await readLinks();
-		links.unshift(newLink);
-		await writeJsonFile(YOUTUBE_FILE, links);
-		console.log("YouTube link saved to JSON:", newLink.id, newLink.title, newLink.channelTitle, newLink.duration ? newLink.duration : "(no duration)");
-		res.status(201).json(newLink);
+		if (newLinks.length === 1) {
+			return res.status(201).json(newLinks[0]);
+		}
+
+		return res.status(201).json({
+			success: true,
+			count: newLinks.length,
+			data: newLinks,
+		});
 	} catch (error) {
 		console.error("Error adding YouTube link:", error);
+		if (error.message === "Could not extract video ID from URL") {
+			return res.status(400).json({ error: error.message });
+		}
 		res.status(500).json({ error: "Failed to add YouTube link" });
 	}
 });
 
-router.delete("/youtube-links/:id", async (req, res) => {
+router.delete("/youtube-links/:id", requireAuth, async (req, res) => {
 	try {
 		if (isMongoConnected()) {
 			const result = await YouTubeLinkModel.deleteOne({ id: req.params.id });

@@ -3,6 +3,7 @@ import multer from "multer";
 import sharp from "sharp";
 import ImageKit from "imagekit";
 import { v4 as uuidv4 } from "uuid";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -63,7 +64,7 @@ const upload = multer({
 });
 
 // Upload image endpoint (with optimization)
-router.post("/image", upload.single("image"), async (req, res) => {
+router.post("/image", requireAuth, upload.single("image"), async (req, res) => {
 	try {
 		if (!req.file) {
 			return res.status(400).json({ error: "No image file provided" });
@@ -111,7 +112,7 @@ router.post("/image", upload.single("image"), async (req, res) => {
 });
 
 // Upload multiple images endpoint
-router.post("/images", upload.array("images", 3), async (req, res) => {
+router.post("/images", requireAuth, upload.array("images", 3), async (req, res) => {
 	try {
 		if (!req.files || req.files.length === 0) {
 			return res.status(400).json({ error: "No image files provided" });
@@ -167,7 +168,7 @@ router.post("/images", upload.array("images", 3), async (req, res) => {
 });
 
 // Upload audio endpoint
-router.post("/audio", upload.single("audio"), async (req, res) => {
+router.post("/audio", requireAuth, upload.single("audio"), async (req, res) => {
 	try {
 		if (!req.file) {
 			return res.status(400).json({ error: "No audio file provided" });

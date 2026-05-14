@@ -3,12 +3,21 @@ import { API_BASE_URL } from '../config/api';
 
 class HymnalService {
   private baseUrl = API_BASE_URL;
-  private fetchOptions = {
-    credentials: 'include' as const,
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  };
+  private token: string | null = null;
+
+  setToken(token: string | null) {
+    this.token = token;
+  }
+
+  private get fetchOptions() {
+    return {
+      credentials: 'include' as const,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+      },
+    };
+  }
 
   async getHagerignaHymns(): Promise<HagerignaHymn[]> {
     try {
@@ -167,6 +176,7 @@ class HymnalService {
         method: 'POST',
         body: formData,
         credentials: 'include',
+        headers: this.token ? { Authorization: `Bearer ${this.token}` } : undefined,
       });
       
       if (!response.ok) {
@@ -186,6 +196,7 @@ class HymnalService {
         method: 'POST',
         body: formData,
         credentials: 'include',
+        headers: this.token ? { Authorization: `Bearer ${this.token}` } : undefined,
       });
       
       if (!response.ok) {
@@ -221,7 +232,16 @@ class HymnalService {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to add YouTube link');
+        let message = 'Failed to add YouTube link';
+        try {
+          const data = await response.json();
+          if (data?.error) {
+            message = data.error;
+          }
+        } catch {
+          // Ignore JSON parse failures and use the generic message.
+        }
+        throw new Error(message);
       }
 
       return await response.json();
@@ -229,6 +249,26 @@ class HymnalService {
       console.error('Error adding YouTube link:', error);
       throw error;
     }
+  }
+
+  async addYouTubeLinks(urls: string[]): Promise<YouTubeLink[]> {
+    const created: YouTubeLink[] = [];
+    for (const url of urls) {
+      try {
+        const link = await this.addYouTubeLink({ url });
+        created.push(link);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to add YouTube links';
+        const failedAfter = created.length;
+        throw new Error(
+          failedAfter > 0
+            ? `${message}. Added ${failedAfter} link${failedAfter === 1 ? '' : 's'} before it failed.`
+            : message
+        );
+      }
+    }
+
+    return created;
   }
 
   async deleteYouTubeLink(id: string): Promise<void> {
