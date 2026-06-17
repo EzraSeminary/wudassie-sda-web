@@ -43,7 +43,7 @@ const HymnFilters: React.FC<HymnFiltersProps> = ({
             placeholder={`Search ${hymnLabel} by title, lyrics, artist, number, or id...`}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white/60 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
 
@@ -69,7 +69,7 @@ const HymnFilters: React.FC<HymnFiltersProps> = ({
             <select
               value={filters.category}
               onChange={(e) => onFilterChange({ ...filters, category: e.target.value })}
-              className="w-full px-4 py-3 bg-white/60 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="">All categories</option>
               {categories.map((category) => (
@@ -85,7 +85,7 @@ const HymnFilters: React.FC<HymnFiltersProps> = ({
             <select
               value={filters.hasAudio}
               onChange={(e) => onFilterChange({ ...filters, hasAudio: e.target.value as HymnFilterState['hasAudio'] })}
-              className="w-full px-4 py-3 bg-white/60 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="all">All hymns</option>
               <option value="yes">Has audio</option>
@@ -100,7 +100,7 @@ const HymnFilters: React.FC<HymnFiltersProps> = ({
               onChange={(e) =>
                 onFilterChange({ ...filters, hasSheetMusic: e.target.value as HymnFilterState['hasSheetMusic'] })
               }
-              className="w-full px-4 py-3 bg-white/60 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="all">All hymns</option>
               <option value="yes">Has sheet music</option>

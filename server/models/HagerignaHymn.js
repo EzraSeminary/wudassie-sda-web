@@ -1,5 +1,14 @@
 import mongoose from "mongoose";
 
+const auditUserSchema = new mongoose.Schema(
+	{
+		id: { type: String, default: "" },
+		email: { type: String, default: "" },
+		role: { type: String, default: "" },
+	},
+	{ _id: false }
+);
+
 const hagerignaSchema = new mongoose.Schema(
 	{
 		id: { type: String, required: true, unique: true },
@@ -9,6 +18,8 @@ const hagerignaSchema = new mongoose.Schema(
 		category: { type: String, default: "" },
 		sheet_music: { type: [String], default: [] },
 		audio: { type: String, default: "" },
+		createdBy: { type: auditUserSchema, default: null },
+		updatedBy: { type: auditUserSchema, default: null },
 	},
 	{ timestamps: true }
 );

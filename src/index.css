@@ -13,6 +13,28 @@
 }
 
 @layer components {
+  /* Light admin UI: override body text-white so inputs and placeholders stay readable */
+  .admin-surface {
+    @apply text-gray-900;
+  }
+
+  .admin-surface input,
+  .admin-surface textarea,
+  .admin-surface select {
+    @apply text-gray-900 placeholder:text-gray-500;
+  }
+
+  .admin-surface input:-webkit-autofill,
+  .admin-surface textarea:-webkit-autofill,
+  .admin-surface select:-webkit-autofill {
+    -webkit-text-fill-color: #111827;
+    box-shadow: 0 0 0 1000px #ffffff inset;
+  }
+
+  .admin-surface option {
+    @apply text-gray-900 bg-white;
+  }
+
   .public-aurora {
     position: fixed;
     inset: 0;

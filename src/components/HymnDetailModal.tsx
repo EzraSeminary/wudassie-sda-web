@@ -9,12 +9,20 @@ interface HymnDetailModalProps {
   isOpen: boolean;
   hymn: HymnDetail | null;
   type: HymnalType;
+  showAudit?: boolean;
   onClose: () => void;
 }
 
 const renderLyrics = (value: string) => value.replace(/\\n/g, '\n');
 
-const HymnDetailModal: React.FC<HymnDetailModalProps> = ({ isOpen, hymn, type, onClose }) => {
+const formatDate = (value?: string) => {
+  if (!value) return 'Unknown';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return date.toLocaleString();
+};
+
+const HymnDetailModal: React.FC<HymnDetailModalProps> = ({ isOpen, hymn, type, showAudit = false, onClose }) => {
   if (!hymn) return null;
 
   const title = type === 'hagerigna' ? hymn.title : hymn.newHymnalTitle;
@@ -94,6 +102,24 @@ const HymnDetailModal: React.FC<HymnDetailModalProps> = ({ isOpen, hymn, type, o
                     <dt className="text-gray-500">Audio</dt>
                     <dd className="text-gray-900 mt-1">{hymn.audio ? 'Available' : 'Not added'}</dd>
                   </div>
+                  {showAudit && (
+                    <>
+                      <div>
+                        <dt className="text-gray-500">Added By</dt>
+                        <dd className="text-gray-900 mt-1">{hymn.createdBy?.email || 'Legacy entry'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-gray-500">Last Updated By</dt>
+                        <dd className="text-gray-900 mt-1">{hymn.updatedBy?.email || hymn.createdBy?.email || 'Unknown'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-gray-500">Audit Trail</dt>
+                        <dd className="text-gray-900 mt-1">
+                          Created {formatDate(hymn.createdAt)} • Updated {formatDate(hymn.updatedAt)}
+                        </dd>
+                      </div>
+                    </>
+                  )}
                 </dl>
               </section>
 

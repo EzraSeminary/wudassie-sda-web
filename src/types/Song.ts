@@ -11,6 +11,21 @@ export interface Song {
   updatedAt: string;
 }
 
+export interface AuditUser {
+  id: string;
+  email: string;
+  role: string;
+}
+
+export interface ManagedUser {
+  id: string;
+  name?: string;
+  email: string;
+  role: 'admin' | 'encoder';
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
 export interface HagerignaHymn {
   id: string;
   artist: string;
@@ -19,6 +34,8 @@ export interface HagerignaHymn {
   category?: string;
   sheet_music?: string[];
   audio?: string;
+  createdBy?: AuditUser | null;
+  updatedBy?: AuditUser | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -33,6 +50,8 @@ export interface SDAHymn {
   category?: string;
   sheet_music?: string[];
   audio?: string;
+  createdBy?: AuditUser | null;
+  updatedBy?: AuditUser | null;
   createdAt?: string;
   updatedAt?: string;
 }

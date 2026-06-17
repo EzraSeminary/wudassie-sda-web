@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Music, Plus, BookOpen, Heart, Youtube, Trash2, LogOut } from 'lucide-react';
+import { Music, Plus, BookOpen, Heart, Youtube, Trash2, LogOut, ShieldPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import HagerignaTable from './HagerignaTable';
 import SDATable from './SDATable';
@@ -10,10 +10,11 @@ import AddSDAModal from './AddSDAModal';
 import EditHagerignaModal from './EditHagerignaModal';
 import EditSDAModal from './EditSDAModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
+import EncoderManagementPanel from './EncoderManagementPanel';
 import LoadingSpinner from './ui/LoadingSpinner';
 import { useToast } from './ui/Toaster';
 import { hymnalService } from '../services/hymnalService';
-import { Category, HagerignaHymn, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
+import { Category, HagerignaHymn, ManagedUser, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
 
 const extractVideoId = (url: string) => {
   const trimmed = url.trim();
@@ -36,7 +37,8 @@ const defaultFilters: HymnFilterState = {
 
 const MusicDashboard: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeSection, setActiveSection] = useState<'sda' | 'hagerigna' | 'youtube'>('sda');
+  const isAdmin = user?.role === 'admin';
+  const [activeSection, setActiveSection] = useState<'sda' | 'hagerigna' | 'youtube' | 'encoders'>('sda');
   const [activeHymnal, setActiveHymnal] = useState<HymnalType>('sda');
   const [hagerignaHymns, setHagerignaHymns] = useState<HagerignaHymn[]>([]);
   const [sdaHymns, setSdaHymns] = useState<SDAHymn[]>([]);
@@ -49,6 +51,10 @@ const MusicDashboard: React.FC = () => {
   const [youtubeLinks, setYoutubeLinks] = useState<YouTubeLink[]>([]);
   const [youtubeUrlInput, setYoutubeUrlInput] = useState('');
   const [youtubeAdding, setYoutubeAdding] = useState(false);
+  const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [creatingEncoder, setCreatingEncoder] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   
   // Modal states
   const [showAddHagerignaModal, setShowAddHagerignaModal] = useState(false);
@@ -104,6 +110,24 @@ const MusicDashboard: React.FC = () => {
       showToast('Failed to load categories', 'error');
     }
   }, [showToast]);
+
+  const loadUsers = useCallback(async () => {
+    if (!isAdmin) {
+      setUsers([]);
+      return;
+    }
+
+    try {
+      setUsersLoading(true);
+      const userData = await hymnalService.getUsers();
+      setUsers(userData);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      showToast('Failed to load encoder accounts', 'error');
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [isAdmin, showToast]);
 
   const handleAddYouTubeLink = async () => {
     const urls = youtubeUrlInput
@@ -196,6 +220,34 @@ const MusicDashboard: React.FC = () => {
     }
   };
 
+  const handleCreateEncoder = async (payload: { name?: string; email: string; password: string }) => {
+    try {
+      setCreatingEncoder(true);
+      await hymnalService.createEncoder(payload);
+      await loadUsers();
+      showToast('Encoder account created', 'success');
+    } catch (error) {
+      console.error('Failed to create encoder:', error);
+      throw error;
+    } finally {
+      setCreatingEncoder(false);
+    }
+  };
+
+  const handleDeleteUser = async (managedUser: ManagedUser) => {
+    try {
+      setDeletingUserId(managedUser.id);
+      await hymnalService.deleteUser(managedUser.id);
+      await loadUsers();
+      showToast(`Removed ${managedUser.email}`, 'success');
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      showToast(error instanceof Error ? error.message : 'Failed to remove encoder', 'error');
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
+
   useEffect(() => {
     loadHymns();
   }, [loadHymns]);
@@ -207,6 +259,10 @@ const MusicDashboard: React.FC = () => {
   useEffect(() => {
     loadCategories();
   }, [loadCategories]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   useEffect(() => {
     const lowerQuery = searchQuery.trim().toLowerCase();
@@ -412,7 +468,9 @@ const MusicDashboard: React.FC = () => {
                   Hymnal Database
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  {activeSection === 'youtube'
+                  {activeSection === 'encoders'
+                    ? `Manage encoder accounts • ${users.filter((entry) => entry.role === 'encoder').length} encoders`
+                    : activeSection === 'youtube'
                     ? `Manage your YouTube links • ${youtubeLinks.length} links`
                     : `Manage your hymnal collections • ${getCurrentCount()} hymns`}
                 </p>
@@ -420,7 +478,7 @@ const MusicDashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-3">
-              {activeSection !== 'youtube' && (
+              {activeSection !== 'youtube' && activeSection !== 'encoders' && (
                 <button
                   onClick={() => activeHymnal === 'hagerigna' ? setShowAddHagerignaModal(true) : setShowAddSDAModal(true)}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
@@ -430,6 +488,9 @@ const MusicDashboard: React.FC = () => {
                 </button>
               )}
               <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
+                <span className="hidden md:inline-flex px-2.5 py-1 rounded-full bg-gray-100 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                  {user?.role}
+                </span>
                 <span className="text-sm text-gray-500 hidden sm:block">{user?.email}</span>
                 <button
                   onClick={logout}
@@ -477,22 +538,38 @@ const MusicDashboard: React.FC = () => {
               Hagerigna ({filteredHagerignaHymns.length})
             </button>
 
-            <button
-              onClick={() => setActiveSection('youtube')}
-              className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
-                activeSection === 'youtube'
-                  ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <Youtube className="w-6 h-6" />
-              YouTube Links ({youtubeLinks.length})
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setActiveSection('youtube')}
+                className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
+                  activeSection === 'youtube'
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Youtube className="w-6 h-6" />
+                YouTube Links ({youtubeLinks.length})
+              </button>
+            )}
+
+            {isAdmin && (
+              <button
+                onClick={() => setActiveSection('encoders')}
+                className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
+                  activeSection === 'encoders'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <ShieldPlus className="w-6 h-6" />
+                Encoders ({users.filter((entry) => entry.role === 'encoder').length})
+              </button>
+            )}
           </div>
         </div>
 
         {/* Search and Filters */}
-        {activeSection !== 'youtube' && (
+        {activeSection !== 'youtube' && activeSection !== 'encoders' && (
           <HymnFilters
             hymnLabel={activeHymnal === 'sda' ? 'SDA hymns' : 'Hagerigna hymns'}
             categories={categories}
@@ -522,11 +599,11 @@ const MusicDashboard: React.FC = () => {
               placeholder="Paste one or more YouTube URLs. Use a new line or comma between links."
               value={youtubeUrlInput}
               onChange={(e) => setYoutubeUrlInput(e.target.value)}
-              className="flex-1 min-w-[200px] px-4 py-3 bg-white/60 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 resize-y"
+              className="flex-1 min-w-[200px] px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-y"
             />
             <button
               onClick={handleAddYouTubeLink}
-              disabled={youtubeAdding || !youtubeUrlInput.trim()}
+              disabled={!isAdmin || youtubeAdding || !youtubeUrlInput.trim()}
               className="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             >
               {youtubeAdding ? 'Adding…' : 'Add Link(s)'}
@@ -534,7 +611,9 @@ const MusicDashboard: React.FC = () => {
           </div>
 
           <p className="text-sm text-gray-500 mb-4">
-            Add one link or paste multiple links at once. Each link will be saved separately.
+            {isAdmin
+              ? 'Add one link or paste multiple links at once. Each link will be saved separately.'
+              : 'Only admins can add or remove YouTube links.'}
           </p>
 
           {youtubeLinks.length === 0 ? (
@@ -587,7 +666,8 @@ const MusicDashboard: React.FC = () => {
                   </div>
                   <button
                     onClick={() => handleDeleteYouTubeLink(link.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                    disabled={!isAdmin}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Delete YouTube link"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -599,8 +679,19 @@ const MusicDashboard: React.FC = () => {
         </div>
         )}
 
+        {activeSection === 'encoders' && isAdmin && (
+          <EncoderManagementPanel
+            users={users}
+            loading={usersLoading}
+            creating={creatingEncoder}
+            deletingUserId={deletingUserId}
+            onCreate={handleCreateEncoder}
+            onDelete={handleDeleteUser}
+          />
+        )}
+
                 {/* Hymns Display */}
-        {activeSection !== 'youtube' && (
+        {activeSection !== 'youtube' && activeSection !== 'encoders' && (
           <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
           {(() => {
             // console.log('Rendering hymns display. Active hymnal:', activeHymnal, 'Current count:', getCurrentCount(), 'Filtered hymns:', activeHymnal === 'hagerigna' ? filteredHagerignaHymns.length : filteredSdaHymns.length);
@@ -617,6 +708,7 @@ const MusicDashboard: React.FC = () => {
           ) : activeHymnal === 'hagerigna' ? (
             <HagerignaTable
               hymns={filteredHagerignaHymns}
+              showAudit={isAdmin}
               onView={(hymn: HagerignaHymn) => openHymnDetails(hymn, 'hagerigna')}
               onEdit={openEditHagerignaModal}
               onDelete={(hymn: HagerignaHymn) => openDeleteModal(hymn, 'hagerigna')}
@@ -624,6 +716,7 @@ const MusicDashboard: React.FC = () => {
           ) : (
             <SDATable
               hymns={filteredSdaHymns}
+              showAudit={isAdmin}
               onView={(hymn: SDAHymn) => openHymnDetails(hymn, 'sda')}
               onEdit={openEditSDAModal}
               onDelete={(hymn: SDAHymn) => openDeleteModal(hymn, 'sda')}
@@ -682,6 +775,7 @@ const MusicDashboard: React.FC = () => {
         isOpen={showHymnDetailModal}
         hymn={detailHymnalType === 'hagerigna' ? selectedHagerignaHymn : selectedSDAHymn}
         type={detailHymnalType}
+        showAudit={isAdmin}
         onClose={closeHymnDetails}
       />
     </div>

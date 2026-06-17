@@ -4,12 +4,13 @@ import { SDAHymn } from '../types/Song';
 
 interface SDATableProps {
   hymns: SDAHymn[];
+  showAudit?: boolean;
   onView: (hymn: SDAHymn) => void;
   onEdit: (hymn: SDAHymn) => void;
   onDelete: (hymn: SDAHymn) => void;
 }
 
-const SDATable: React.FC<SDATableProps> = ({ hymns, onView, onEdit, onDelete }) => {
+const SDATable: React.FC<SDATableProps> = ({ hymns, showAudit = false, onView, onEdit, onDelete }) => {
   // console.log('SDATable received hymns:', hymns.length, hymns.slice(0, 2));
   
   const formatLyrics = (lyrics: string) => {
@@ -36,6 +37,11 @@ const SDATable: React.FC<SDATableProps> = ({ hymns, onView, onEdit, onDelete }) 
             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Lyrics Preview
             </th>
+            {showAudit && (
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Added By
+              </th>
+            )}
             <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
               Actions
             </th>
@@ -61,6 +67,14 @@ const SDATable: React.FC<SDATableProps> = ({ hymns, onView, onEdit, onDelete }) 
                   </pre>
                 </button>
               </td>
+              {showAudit && (
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900">{hymn.createdBy?.email || 'Legacy entry'}</div>
+                  <div className="text-xs text-gray-500">
+                    Updated by {hymn.updatedBy?.email || hymn.createdBy?.email || 'Unknown'}
+                  </div>
+                </td>
+              )}
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex items-center justify-end gap-2">
                   <button

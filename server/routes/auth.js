@@ -1,8 +1,8 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { isMongoConnected } from "../db/mongo.js";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -68,6 +68,95 @@ router.get("/me", (req, res) => {
 		res.json({ user: { email: payload.email, role: payload.role } });
 	} catch {
 		res.status(401).json({ error: "Invalid or expired token" });
+	}
+});
+
+router.get("/users", requireAdmin, async (req, res) => {
+	if (!isMongoConnected()) {
+		return res.status(503).json({ error: "User management requires MongoDB" });
+	}
+
+	try {
+		const users = await User.find().sort({ role: 1, createdAt: -1 }).lean();
+		res.json(
+			users.map((user) => ({
+				id: String(user._id),
+				name: user.name || "",
+				email: user.email,
+				role: user.role,
+				createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : null,
+				updatedAt: user.updatedAt ? new Date(user.updatedAt).toISOString() : null,
+			}))
+		);
+	} catch (err) {
+		console.error("List users error:", err);
+		res.status(500).json({ error: "Failed to load users" });
+	}
+});
+
+router.post("/users", requireAdmin, async (req, res) => {
+	if (!isMongoConnected()) {
+		return res.status(503).json({ error: "User management requires MongoDB" });
+	}
+
+	const email = String(req.body?.email || "").toLowerCase().trim();
+	const password = String(req.body?.password || "");
+	const name = String(req.body?.name || "").trim();
+	const role = String(req.body?.role || "encoder").trim();
+
+	if (!email || !password) {
+		return res.status(400).json({ error: "Email and password are required" });
+	}
+	if (password.length < 8) {
+		return res.status(400).json({ error: "Password must be at least 8 characters" });
+	}
+	if (!["encoder"].includes(role)) {
+		return res.status(400).json({ error: "Only encoder accounts can be created here" });
+	}
+
+	try {
+		const existing = await User.findOne({ email });
+		if (existing) {
+			return res.status(409).json({ error: "A user with that email already exists" });
+		}
+
+		const user = await User.create({ email, password, name, role });
+		res.status(201).json({
+			id: String(user._id),
+			name: user.name || "",
+			email: user.email,
+			role: user.role,
+			createdAt: user.createdAt ? user.createdAt.toISOString() : null,
+			updatedAt: user.updatedAt ? user.updatedAt.toISOString() : null,
+		});
+	} catch (err) {
+		console.error("Create user error:", err);
+		res.status(500).json({ error: "Failed to create user" });
+	}
+});
+
+router.delete("/users/:id", requireAdmin, async (req, res) => {
+	if (!isMongoConnected()) {
+		return res.status(503).json({ error: "User management requires MongoDB" });
+	}
+
+	try {
+		const user = await User.findById(req.params.id);
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
+		if (user.role === "admin") {
+			return res.status(400).json({ error: "Admin accounts cannot be deleted here" });
+		}
+		if (String(user._id) === req.user.id) {
+			return res.status(400).json({ error: "You cannot delete your own account" });
+		}
+
+		await User.deleteOne({ _id: user._id });
+		res.status(204).send();
+	} catch (err) {
+		console.error("Delete user error:", err);
+		res.status(500).json({ error: "Failed to delete user" });
 	}
 });
 

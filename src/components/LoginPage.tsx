@@ -28,7 +28,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 flex items-center justify-center p-4">
+    <div className="admin-surface min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {onBack && (
           <button
@@ -44,8 +44,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl shadow-lg mb-4">
             <Music className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Wudassie Admin</h1>
-          <p className="text-gray-500 mt-1">Sign in to manage the hymnal database</p>
+          <h1 className="text-3xl font-bold text-gray-900">Wudassie Portal</h1>
+          <p className="text-gray-500 mt-1">Sign in as an admin or encoder to manage the hymnal database</p>
         </div>
 
         {/* Card */}
@@ -67,7 +67,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+                  className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
                   placeholder="admin@gmail.com"
                 />
               </div>
@@ -89,7 +89,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+                  className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
                   placeholder="Enter your password"
                 />
                 <button
@@ -131,7 +131,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onBack }) => {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Wudassie Hymnal Database &mdash; Admin Portal
+          Wudassie Hymnal Database &mdash; Management Portal
         </p>
       </div>
     </div>

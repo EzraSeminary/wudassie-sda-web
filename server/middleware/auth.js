@@ -17,3 +17,14 @@ export const requireAuth = (req, res, next) => {
 		return res.status(401).json({ error: "Invalid or expired token" });
 	}
 };
+
+export const requireRole = (...roles) => (req, res, next) => {
+	requireAuth(req, res, () => {
+		if (!req.user || !roles.includes(req.user.role)) {
+			return res.status(403).json({ error: "You do not have permission to perform this action" });
+		}
+		next();
+	});
+};
+
+export const requireAdmin = requireRole("admin");

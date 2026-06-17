@@ -58,6 +58,12 @@ const parseSheetMusic = (raw) => {
 	}
 };
 
+const getAuditActor = (req) => ({
+	id: String(req.user?.id || ""),
+	email: String(req.user?.email || ""),
+	role: String(req.user?.role || ""),
+});
+
 const ensureCategory = async (name) => {
 	const value = String(name || "").trim();
 	if (!value || !isMongoConnected()) return;
@@ -164,6 +170,8 @@ const toMongoSafeHagerigna = (doc) => ({
 	category: doc.category || undefined,
 	sheet_music: Array.isArray(doc.sheet_music) && doc.sheet_music.length ? doc.sheet_music : undefined,
 	audio: doc.audio || undefined,
+	createdBy: doc.createdBy || null,
+	updatedBy: doc.updatedBy || null,
 	createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : undefined,
 	updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : undefined,
 });
@@ -178,6 +186,8 @@ const toMongoSafeSda = (doc) => ({
 	category: doc.category || undefined,
 	sheet_music: Array.isArray(doc.sheet_music) && doc.sheet_music.length ? doc.sheet_music : undefined,
 	audio: doc.audio || undefined,
+	createdBy: doc.createdBy || null,
+	updatedBy: doc.updatedBy || null,
 	createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : undefined,
 	updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : undefined,
 });
@@ -240,8 +250,13 @@ router.get("/sda", async (req, res) => {
 
 router.post("/hagerigna", requireAuth, async (req, res) => {
 	try {
+		const actor = getAuditActor(req);
 		if (!isMongoConnected()) {
-			const savedHymn = await appendToHagerignaFile(req.body);
+			const savedHymn = await appendToHagerignaFile({
+				...req.body,
+				createdBy: actor,
+				updatedBy: actor,
+			});
 			return res.status(201).json(savedHymn);
 		}
 		const payload = {
@@ -252,10 +267,12 @@ router.post("/hagerigna", requireAuth, async (req, res) => {
 			category: req.body.category || "",
 			sheet_music: Array.isArray(req.body.sheet_music) ? req.body.sheet_music : [],
 			audio: req.body.audio || "",
+			createdBy: actor,
+			updatedBy: actor,
 		};
-		await HagerignaHymn.create(payload);
+		const created = await HagerignaHymn.create(payload);
 		await ensureCategory(payload.category);
-		res.status(201).json(payload);
+		res.status(201).json(toMongoSafeHagerigna(created.toObject()));
 	} catch (error) {
 		console.error("Error adding Hagerigna hymn:", error);
 		res.status(500).json({ error: "Failed to add Hagerigna hymn" });
@@ -264,8 +281,13 @@ router.post("/hagerigna", requireAuth, async (req, res) => {
 
 router.post("/sda", requireAuth, async (req, res) => {
 	try {
+		const actor = getAuditActor(req);
 		if (!isMongoConnected()) {
-			const savedHymn = await appendToSDAFile(req.body);
+			const savedHymn = await appendToSDAFile({
+				...req.body,
+				createdBy: actor,
+				updatedBy: actor,
+			});
 			return res.status(201).json(savedHymn);
 		}
 		const payload = {
@@ -278,10 +300,12 @@ router.post("/sda", requireAuth, async (req, res) => {
 			category: req.body.category || "",
 			sheet_music: Array.isArray(req.body.sheet_music) ? req.body.sheet_music : [],
 			audio: req.body.audio || "",
+			createdBy: actor,
+			updatedBy: actor,
 		};
-		await SDAHymn.create(payload);
+		const created = await SDAHymn.create(payload);
 		await ensureCategory(payload.category);
-		res.status(201).json(payload);
+		res.status(201).json(toMongoSafeSda(created.toObject()));
 	} catch (error) {
 		console.error("Error adding SDA hymn:", error);
 		res.status(500).json({ error: "Failed to add SDA hymn" });
@@ -290,8 +314,12 @@ router.post("/sda", requireAuth, async (req, res) => {
 
 router.put("/hagerigna/:id", requireAuth, async (req, res) => {
 	try {
+		const actor = getAuditActor(req);
 		if (!isMongoConnected()) {
-			const updatedHymn = await updateHagerignaFile(req.params.id, req.body);
+			const updatedHymn = await updateHagerignaFile(req.params.id, {
+				...req.body,
+				updatedBy: actor,
+			});
 			return res.json(updatedHymn);
 		}
 		const update = {
@@ -301,6 +329,7 @@ router.put("/hagerigna/:id", requireAuth, async (req, res) => {
 			...(req.body.category !== undefined ? { category: req.body.category } : {}),
 			...(req.body.sheet_music !== undefined ? { sheet_music: req.body.sheet_music } : {}),
 			...(req.body.audio !== undefined ? { audio: req.body.audio } : {}),
+			updatedBy: actor,
 		};
 		const updated = await HagerignaHymn.findOneAndUpdate(
 			{ id: req.params.id },
@@ -318,8 +347,12 @@ router.put("/hagerigna/:id", requireAuth, async (req, res) => {
 
 router.put("/sda/:id", requireAuth, async (req, res) => {
 	try {
+		const actor = getAuditActor(req);
 		if (!isMongoConnected()) {
-			const updatedHymn = await updateSDAFile(req.params.id, req.body);
+			const updatedHymn = await updateSDAFile(req.params.id, {
+				...req.body,
+				updatedBy: actor,
+			});
 			return res.json(updatedHymn);
 		}
 		const update = {
@@ -331,6 +364,7 @@ router.put("/sda/:id", requireAuth, async (req, res) => {
 			...(req.body.category !== undefined ? { category: req.body.category } : {}),
 			...(req.body.sheet_music !== undefined ? { sheet_music: req.body.sheet_music } : {}),
 			...(req.body.audio !== undefined ? { audio: req.body.audio } : {}),
+			updatedBy: actor,
 		};
 		const updated = await SDAHymn.findOneAndUpdate(
 			{ id: req.params.id },

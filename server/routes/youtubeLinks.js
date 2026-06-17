@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { readJsonFileOrDefault, writeJsonFile } from "../utils/fileUtils.js";
 import { isMongoConnected } from "../db/mongo.js";
 import YouTubeLinkModel from "../models/YouTubeLink.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 const YOUTUBE_FILE = "YouTubeLinks.json";
@@ -216,7 +216,7 @@ router.get("/youtube-links", async (req, res) => {
 	}
 });
 
-router.post("/youtube-links", requireAuth, async (req, res) => {
+router.post("/youtube-links", requireAdmin, async (req, res) => {
 	try {
 		const { url, urls } = req.body || {};
 		const requestedUrls = Array.isArray(urls)
@@ -303,7 +303,7 @@ router.post("/youtube-links", requireAuth, async (req, res) => {
 	}
 });
 
-router.delete("/youtube-links/:id", requireAuth, async (req, res) => {
+router.delete("/youtube-links/:id", requireAdmin, async (req, res) => {
 	try {
 		if (isMongoConnected()) {
 			const result = await YouTubeLinkModel.deleteOne({ id: req.params.id });

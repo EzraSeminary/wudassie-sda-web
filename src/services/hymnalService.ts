@@ -1,4 +1,4 @@
-import { Category, HagerignaHymn, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
+import { Category, HagerignaHymn, ManagedUser, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
 import { API_BASE_URL } from '../config/api';
 
 interface AddYouTubeLinkResponse extends YouTubeLink {
@@ -242,6 +242,46 @@ class HymnalService {
     } catch (error) {
       console.error('Error fetching categories:', error);
       throw error;
+    }
+  }
+
+  async getUsers(): Promise<ManagedUser[]> {
+    const response = await fetch(`${this.baseUrl}/auth/users`, this.fetchOptions);
+    if (!response.ok) {
+      throw new Error('Failed to fetch users');
+    }
+    return await response.json();
+  }
+
+  async createEncoder(payload: { name?: string; email: string; password: string }): Promise<ManagedUser> {
+    const response = await fetch(`${this.baseUrl}/auth/users`, {
+      ...this.fetchOptions,
+      method: 'POST',
+      body: JSON.stringify({ ...payload, role: 'encoder' }),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(data?.error || 'Failed to create encoder');
+    }
+    return data;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/auth/users/${id}`, {
+      ...this.fetchOptions,
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      let message = 'Failed to delete user';
+      try {
+        const data = await response.json();
+        if (data?.error) {
+          message = data.error;
+        }
+      } catch {
+        // no-op
+      }
+      throw new Error(message);
     }
   }
 

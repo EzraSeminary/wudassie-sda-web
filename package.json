@@ -7,11 +7,14 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "client": "vite",
     "server": "node server/index.js",
+    "start": "node server/index.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.2.3",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -19,6 +22,11 @@
     "cors": "^2.8.5",
     "helmet": "^7.1.0",
     "express-validator": "^7.0.1",
+    "imagekit": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.0.0",
+    "multer": "^2.0.2",
+    "sharp": "^0.34.5",
     "uuid": "^9.0.1",
     "concurrently": "^8.2.2"
   },

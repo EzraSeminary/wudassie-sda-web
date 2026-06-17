@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { existsSync } from "fs";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -62,6 +63,8 @@ if (result.error || !envPath) {
 
 const app = express();
 const PORT = process.env.PORT || 5002;
+const distPath = join(__dirname, "..", "dist");
+const hasClientBuild = existsSync(distPath);
 
 // Middleware
 app.use(
@@ -104,6 +107,10 @@ app.options("*", cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
+if (hasClientBuild) {
+	app.use(express.static(distPath));
+}
+
 // Connect to MongoDB if MONGODB_URI is set (for production / persistent YouTube links)
 connectToMongo()
 	.then(() => seedAdminUser())
@@ -120,6 +127,16 @@ app.use("/api", youtubeLinksRoutes);
 app.get("/api/health", (req, res) => {
 	res.json({ status: "OK", message: "Music Database API is running" });
 });
+
+if (hasClientBuild) {
+	app.get("*", (req, res, next) => {
+		if (req.path.startsWith("/api")) {
+			return next();
+		}
+
+		res.sendFile(join(distPath, "index.html"));
+	});
+}
 
 // Error handling
 app.use(errorHandler);
