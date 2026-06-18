@@ -1,0 +1,107 @@
+[
+  {
+    "id": "category-worship",
+    "name": "Worship",
+    "slug": "worship"
+  },
+  {
+    "id": "category-praise",
+    "name": "Praise",
+    "slug": "praise"
+  },
+  {
+    "id": "category-adoration",
+    "name": "Adoration",
+    "slug": "adoration"
+  },
+  {
+    "id": "category-thanksgiving",
+    "name": "Thanksgiving",
+    "slug": "thanksgiving"
+  },
+  {
+    "id": "category-prayer",
+    "name": "Prayer",
+    "slug": "prayer"
+  },
+  {
+    "id": "category-repentance",
+    "name": "Repentance",
+    "slug": "repentance"
+  },
+  {
+    "id": "category-salvation",
+    "name": "Salvation",
+    "slug": "salvation"
+  },
+  {
+    "id": "category-faith",
+    "name": "Faith",
+    "slug": "faith"
+  },
+  {
+    "id": "category-hope",
+    "name": "Hope",
+    "slug": "hope"
+  },
+  {
+    "id": "category-love",
+    "name": "Love",
+    "slug": "love"
+  },
+  {
+    "id": "category-peace",
+    "name": "Peace",
+    "slug": "peace"
+  },
+  {
+    "id": "category-joy",
+    "name": "Joy",
+    "slug": "joy"
+  },
+  {
+    "id": "category-testimony",
+    "name": "Testimony",
+    "slug": "testimony"
+  },
+  {
+    "id": "category-dedication",
+    "name": "Dedication",
+    "slug": "dedication"
+  },
+  {
+    "id": "category-communion",
+    "name": "Communion",
+    "slug": "communion"
+  },
+  {
+    "id": "category-baptism",
+    "name": "Baptism",
+    "slug": "baptism"
+  },
+  {
+    "id": "category-wedding",
+    "name": "Wedding",
+    "slug": "wedding"
+  },
+  {
+    "id": "category-funeral",
+    "name": "Funeral",
+    "slug": "funeral"
+  },
+  {
+    "id": "category-christmas",
+    "name": "Christmas",
+    "slug": "christmas"
+  },
+  {
+    "id": "category-easter",
+    "name": "Easter",
+    "slug": "easter"
+  },
+  {
+    "id": "category-other",
+    "name": "Other",
+    "slug": "other"
+  }
+]
