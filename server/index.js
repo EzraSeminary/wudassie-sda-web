@@ -34,12 +34,22 @@ for (const path of possiblePaths) {
 	}
 }
 
-if (result.error || !envPath) {
+const hasRuntimeEnv =
+	Boolean(process.env.MONGODB_URI || process.env.MONGO_URI) ||
+	Boolean(process.env.JWT_SECRET) ||
+	Boolean(process.env.IMAGEKIT_PUBLIC_KEY) ||
+	Boolean(process.env.IMAGEKIT_PRIVATE_KEY) ||
+	Boolean(process.env.IMAGEKIT_URL_ENDPOINT) ||
+	Boolean(process.env.YOUTUBE_API_KEY);
+
+if ((result.error || !envPath) && !hasRuntimeEnv) {
 	console.warn("⚠️  Warning: Could not load .env file");
 	console.warn("Tried paths:", possiblePaths);
 	if (result.error) {
 		console.warn("Error:", result.error.message);
 	}
+} else if (!envPath && hasRuntimeEnv) {
+	console.log("✅ Runtime environment variables detected");
 } else {
 	console.log("✅ .env file loaded successfully");
 	console.log("📍 Env file path:", envPath);
