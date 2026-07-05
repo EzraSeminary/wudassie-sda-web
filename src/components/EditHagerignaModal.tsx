@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, X } from 'lucide-react';
+import { Disc3, Edit, Music2, Trash2, Upload, X } from 'lucide-react';
 import Modal from './ui/Modal';
-import { HagerignaHymn, HYMN_CATEGORIES } from '../types/Song';
+import { HagerignaAlbumTrack, HagerignaHymn, HYMN_CATEGORIES } from '../types/Song';
 import { hymnalService } from '../services/hymnalService';
 
 interface EditHagerignaModalProps {
@@ -21,6 +21,11 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
     artist: '',
     song: '',
     title: '',
+    isAlbum: false,
+    albumName: '',
+    choirName: '',
+    trackCount: 0,
+    tracks: [] as HagerignaAlbumTrack[],
     category: '',
     sheet_music: [] as string[],
     audio: '',
@@ -29,6 +34,7 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [uploadingTrackId, setUploadingTrackId] = useState<string | null>(null);
 
   useEffect(() => {
     if (hymn) {
@@ -36,6 +42,11 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
         artist: hymn.artist || '',
         song: hymn.song || '',
         title: hymn.title || '',
+        isAlbum: Boolean(hymn.isAlbum),
+        albumName: hymn.albumName || hymn.title || '',
+        choirName: hymn.choirName || hymn.artist || '',
+        trackCount: hymn.tracks?.length || hymn.trackCount || 0,
+        tracks: hymn.tracks || [],
         category: hymn.category || '',
         sheet_music: hymn.sheet_music || [],
         audio: hymn.audio || '',
@@ -46,24 +57,67 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     const newErrors: Record<string, string> = {};
-    if (!formData.artist.trim()) newErrors.artist = 'Artist is required';
-    if (!formData.song.trim()) newErrors.song = 'Song is required';
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (formData.isAlbum) {
+      if (!formData.albumName.trim()) newErrors.albumName = 'Album name is required';
+      if (!formData.choirName.trim()) newErrors.choirName = 'Singer/Choir name is required';
+      if (formData.tracks.length === 0) newErrors.tracks = 'At least one track is required';
+      if (formData.tracks.some((track) => !track.title.trim() || !track.song.trim())) {
+        newErrors.tracks = 'Each track needs a title and song content';
+      }
+    } else {
+      if (!formData.artist.trim()) newErrors.artist = 'Artist is required';
+      if (!formData.song.trim()) newErrors.song = 'Song is required';
+      if (!formData.title.trim()) newErrors.title = 'Title is required';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    onSubmit(formData);
+    if (formData.isAlbum) {
+      const cleanTracks = formData.tracks.map((track, index) => ({
+        ...track,
+        trackNumber: index + 1,
+        title: track.title.trim(),
+        song: track.song.trim(),
+        audio: track.audio || '',
+      }));
+      onSubmit({
+        ...formData,
+        albumName: formData.albumName.trim(),
+        choirName: formData.choirName.trim(),
+        trackCount: cleanTracks.length,
+        tracks: cleanTracks,
+        artist: formData.choirName.trim(),
+        title: formData.albumName.trim(),
+        song: cleanTracks.map((track) => `${track.trackNumber}. ${track.title}`).join('\n'),
+        sheet_music: [],
+        audio: '',
+      });
+    } else {
+      onSubmit(formData);
+    }
     handleClose();
   };
 
   const handleClose = () => {
-    setFormData({ artist: '', song: '', title: '', category: '', sheet_music: [], audio: '' });
+    setFormData({
+      artist: '',
+      song: '',
+      title: '',
+      isAlbum: false,
+      albumName: '',
+      choirName: '',
+      trackCount: 0,
+      tracks: [],
+      category: '',
+      sheet_music: [],
+      audio: '',
+    });
     setErrors({});
+    setUploadingTrackId(null);
     onClose();
   };
 
@@ -131,13 +185,208 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
     }
   };
 
+  const updateTrack = (trackId: string, field: keyof HagerignaAlbumTrack, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tracks: prev.tracks.map((track) =>
+        track.id === trackId ? { ...track, [field]: value } : track
+      ),
+    }));
+    if (errors.tracks) {
+      setErrors((prev) => ({ ...prev, tracks: '' }));
+    }
+  };
+
+  const removeTrack = (trackId: string) => {
+    setFormData((prev) => {
+      const nextTracks = prev.tracks
+        .filter((track) => track.id !== trackId)
+        .map((track, index) => ({ ...track, trackNumber: index + 1 }));
+      return {
+        ...prev,
+        tracks: nextTracks,
+        trackCount: nextTracks.length,
+      };
+    });
+  };
+
+  const handleTrackAudioUpload = async (
+    trackId: string,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingTrackId(trackId);
+    try {
+      const uploadData = new FormData();
+      uploadData.append('audio', file);
+      const response = await hymnalService.uploadAudio(uploadData);
+      updateTrack(trackId, 'audio', response.url);
+    } catch (error) {
+      console.error('Error uploading track audio:', error);
+      setErrors((prev) => ({ ...prev, tracks: 'Failed to upload track audio' }));
+    } finally {
+      setUploadingTrackId(null);
+      event.target.value = '';
+    }
+  };
+
   if (!hymn) return null;
+
+  if (formData.isAlbum) {
+    return (
+      <Modal isOpen={isOpen} onClose={handleClose}>
+        <div className="admin-panel rounded-2xl max-w-7xl w-full max-h-[92vh] overflow-y-auto">
+          <div className="bg-slate-950 p-6 rounded-t-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Disc3 className="w-6 h-6 text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Edit Hagerigna Album</h2>
+              </div>
+              <button
+                onClick={handleClose}
+                className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-colors"
+                aria-label="Close album editor"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Album Name *</label>
+                <input
+                  type="text"
+                  value={formData.albumName}
+                  onChange={(event) => handleChange('albumName', event.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    errors.albumName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.albumName && <p className="mt-1 text-sm text-red-600">{errors.albumName}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Singer/Choir Name *</label>
+                <input
+                  type="text"
+                  value={formData.choirName}
+                  onChange={(event) => handleChange('choirName', event.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    errors.choirName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.choirName && <p className="mt-1 text-sm text-red-600">{errors.choirName}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tracks</label>
+                <div className="px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
+                  {formData.tracks.length}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {formData.tracks.map((track) => (
+                <section key={track.id} className="admin-form-card">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Music2 className="w-5 h-5 text-emerald-600" />
+                      <h3 className="font-semibold text-gray-900">Track {track.trackNumber}</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeTrack(track.id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete track"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Track Title *</label>
+                        <input
+                          type="text"
+                          value={track.title}
+                          onChange={(event) => updateTrack(track.id, 'title', event.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Audio File</label>
+                        <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 cursor-pointer">
+                          <Upload className="w-4 h-4" />
+                          {uploadingTrackId === track.id ? 'Uploading...' : 'Upload Audio'}
+                          <input
+                            type="file"
+                            accept="audio/*"
+                            onChange={(event) => handleTrackAudioUpload(track.id, event)}
+                            disabled={uploadingTrackId === track.id}
+                            className="sr-only"
+                          />
+                        </label>
+                        {track.audio && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <p className="text-xs text-gray-600 truncate flex-1">{track.audio}</p>
+                            <button
+                              type="button"
+                              onClick={() => updateTrack(track.id, 'audio', '')}
+                              className="text-xs text-red-600 hover:text-red-800"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Song Content *</label>
+                      <textarea
+                        value={track.song}
+                        onChange={(event) => updateTrack(track.id, 'song', event.target.value)}
+                        rows={5}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y"
+                      />
+                    </div>
+                  </div>
+                </section>
+              ))}
+              {errors.tracks && <p className="text-sm text-red-600">{errors.tracks}</p>}
+            </div>
+
+            <div className="flex gap-3 mt-8 border-t border-slate-200 pt-5">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-medium"
+              >
+                Update Album
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="admin-panel rounded-2xl max-w-7xl w-full max-h-[92vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-t-2xl">
+        <div className="bg-slate-950 p-6 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/20 rounded-lg">
@@ -155,10 +404,10 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 md:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Artist */}
-            <div>
+            <div className="lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Artist *
               </label>
@@ -306,7 +555,7 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 mt-8">
+          <div className="flex gap-3 mt-8 border-t border-slate-200 pt-5">
             <button
               type="button"
               onClick={handleClose}
@@ -316,7 +565,7 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all font-medium"
+              className="flex-1 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-medium"
             >
               Update Hymn
             </button>

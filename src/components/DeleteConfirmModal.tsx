@@ -22,9 +22,9 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+      <div className="admin-panel rounded-2xl max-w-xl w-full overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-red-500 to-pink-500 p-6 rounded-t-2xl">
+        <div className="bg-slate-950 p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/20 rounded-lg">
@@ -48,12 +48,18 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               Are you sure you want to delete this {itemType.toLowerCase()}? This action cannot be undone.
             </p>
             
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
               {'title' in item ? (
                 <>
-                  <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
-                  <p className="text-gray-600 text-sm">by {item.artist}</p>
-                  <p className="text-gray-500 text-sm">{item.song}</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">
+                    {item.isAlbum ? item.albumName || item.title : item.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    by {item.isAlbum ? item.choirName || item.artist : item.artist}
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    {item.isAlbum ? `${item.tracks?.length || item.trackCount || 0} tracks` : item.song}
+                  </p>
                 </>
               ) : (
                 <>
@@ -75,7 +81,7 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 transition-all font-medium"
+              className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-medium"
             >
               Delete {itemType}
             </button>

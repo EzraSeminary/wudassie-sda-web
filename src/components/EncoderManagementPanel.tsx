@@ -49,40 +49,41 @@ const EncoderManagementPanel: React.FC<EncoderManagementPanelProps> = ({
 
   return (
     <div className="space-y-6">
-      <section className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
+      <section className="admin-panel rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-5">
-          <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg">
+          <div className="p-3 rounded-xl bg-amber-300 text-slate-950 shadow-lg shadow-amber-500/20">
             <ShieldPlus className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Encoder Accounts</h2>
-            <p className="text-sm text-gray-500">Only admins can create or remove encoder accounts.</p>
+            <p className="admin-kicker">Access Control</p>
+            <h2 className="text-xl font-semibold text-slate-950">Encoder Accounts</h2>
+            <p className="text-sm text-slate-500">Only admins can create or remove encoder accounts.</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Name</label>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Optional display name"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="encoder@example.com"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
             <input
               type="password"
               required
@@ -90,15 +91,15 @@ const EncoderManagementPanel: React.FC<EncoderManagementPanelProps> = ({
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="At least 8 characters"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
             />
           </div>
           <div className="md:col-span-3 flex items-center justify-between gap-3 flex-wrap">
-            <div className="text-sm text-gray-500">Encoder accounts can add, edit, and delete hymns, but they cannot manage other users.</div>
+            <div className="text-sm text-slate-500">Encoder accounts can add, edit, and delete hymns, but they cannot manage other users.</div>
             <button
               type="submit"
               disabled={creating}
-              className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium hover:from-amber-600 hover:to-orange-600 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-5 py-3 rounded-xl bg-teal-600 text-white font-medium hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {creating ? 'Creating…' : 'Create Encoder'}
             </button>
@@ -111,37 +112,37 @@ const EncoderManagementPanel: React.FC<EncoderManagementPanelProps> = ({
         </form>
       </section>
 
-      <section className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-3">
-          <UserCog className="w-5 h-5 text-amber-600" />
+      <section className="admin-panel rounded-2xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-200 flex items-center gap-3">
+          <UserCog className="w-5 h-5 text-teal-600" />
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Existing Encoders</h3>
-            <p className="text-sm text-gray-500">{encoders.length} encoder account{encoders.length === 1 ? '' : 's'}</p>
+            <h3 className="text-lg font-semibold text-slate-950">Existing Encoders</h3>
+            <p className="text-sm text-slate-500">{encoders.length} encoder account{encoders.length === 1 ? '' : 's'}</p>
           </div>
         </div>
 
         {loading ? (
-          <div className="px-6 py-10 text-sm text-gray-500">Loading encoder accounts…</div>
+          <div className="px-6 py-10 text-sm text-slate-500">Loading encoder accounts…</div>
         ) : encoders.length === 0 ? (
-          <div className="px-6 py-10 text-sm text-gray-500">No encoder accounts have been created yet.</div>
+          <div className="px-6 py-10 text-sm text-slate-500">No encoder accounts have been created yet.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50/80 border-b border-gray-200">
+            <table className="admin-data-table">
+              <thead>
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Created</th>
+                  <th className="text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white/50 divide-y divide-gray-200">
+              <tbody>
                 {encoders.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-gray-900">{user.name || 'Not set'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{formatDate(user.createdAt)}</td>
-                    <td className="px-6 py-4 text-right">
+                  <tr key={user.id}>
+                    <td className="text-sm text-slate-950">{user.name || 'Not set'}</td>
+                    <td className="text-sm text-slate-700">{user.email}</td>
+                    <td className="text-sm text-slate-500">{formatDate(user.createdAt)}</td>
+                    <td className="text-right">
                       <button
                         onClick={() => onDelete(user)}
                         disabled={deletingUserId === user.id}

@@ -111,9 +111,9 @@ const AddHagerignaModal: React.FC<AddHagerignaModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="admin-panel rounded-2xl max-w-6xl w-full max-h-[92vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-t-2xl">
+        <div className="bg-slate-950 p-6 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/20 rounded-lg">
@@ -131,10 +131,10 @@ const AddHagerignaModal: React.FC<AddHagerignaModalProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 md:p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Artist */}
-            <div>
+            <div className="lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Artist *
               </label>
@@ -275,7 +275,7 @@ const AddHagerignaModal: React.FC<AddHagerignaModalProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 mt-8">
+          <div className="flex gap-3 mt-8 border-t border-slate-200 pt-5">
             <button
               type="button"
               onClick={handleClose}
@@ -285,7 +285,7 @@ const AddHagerignaModal: React.FC<AddHagerignaModalProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all font-medium"
+              className="flex-1 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all font-medium"
             >
               Add Hymn
             </button>

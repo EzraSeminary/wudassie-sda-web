@@ -31,6 +31,11 @@ export interface HagerignaHymn {
   artist: string;
   song: string;
   title: string;
+  isAlbum?: boolean;
+  albumName?: string;
+  choirName?: string;
+  trackCount?: number;
+  tracks?: HagerignaAlbumTrack[];
   category?: string;
   sheet_music?: string[];
   audio?: string;
@@ -38,6 +43,14 @@ export interface HagerignaHymn {
   updatedBy?: AuditUser | null;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface HagerignaAlbumTrack {
+  id: string;
+  trackNumber: number;
+  title: string;
+  song: string;
+  audio?: string;
 }
 
 export interface SDAHymn {

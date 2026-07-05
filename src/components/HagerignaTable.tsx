@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Eye, Trash2 } from 'lucide-react';
+import { Disc3, Edit, Eye, Music2, Trash2 } from 'lucide-react';
 import { HagerignaHymn } from '../types/Song';
 
 interface HagerignaTableProps {
@@ -15,73 +15,87 @@ const HagerignaTable: React.FC<HagerignaTableProps> = ({ hymns, showAudit = fals
   
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-gray-50/80 border-b border-gray-200">
+      <table className="admin-data-table">
+        <thead>
           <tr>
-            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th>
               Artist
             </th>
-            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th>
               Song
             </th>
-            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th>
               Title
             </th>
             {showAudit && (
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th>
                 Added By
               </th>
             )}
-            <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="text-right">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white/50 divide-y divide-gray-200">
+        <tbody>
           {hymns.map((hymn) => (
-            <tr key={hymn.id} className="hover:bg-gray-50/50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <button onClick={() => onView(hymn)} className="text-sm font-medium text-gray-900 hover:text-green-700 text-left">
-                  {hymn.artist}
+            <tr key={hymn.id}>
+              <td className="whitespace-nowrap">
+                <button onClick={() => onView(hymn)} className="text-sm font-semibold text-slate-950 hover:text-teal-700 text-left">
+                  {hymn.isAlbum ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Disc3 className="w-4 h-4 text-teal-600" />
+                      {hymn.choirName || hymn.artist}
+                    </span>
+                  ) : (
+                    hymn.artist
+                  )}
                 </button>
               </td>
-              <td className="px-6 py-4">
-                <button onClick={() => onView(hymn)} className="text-sm text-gray-900 max-w-xs truncate text-left hover:text-green-700">
-                  {hymn.song}
+              <td>
+                <button onClick={() => onView(hymn)} className="text-sm text-slate-700 max-w-xs truncate text-left hover:text-teal-700">
+                  {hymn.isAlbum ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Music2 className="w-4 h-4 text-slate-500" />
+                      {hymn.tracks?.length || hymn.trackCount || 0} tracks
+                    </span>
+                  ) : (
+                    hymn.song
+                  )}
                 </button>
               </td>
-              <td className="px-6 py-4">
-                <button onClick={() => onView(hymn)} className="text-sm text-gray-900 max-w-xs truncate text-left hover:text-green-700">
-                  {hymn.title}
+              <td>
+                <button onClick={() => onView(hymn)} className="text-sm text-slate-900 max-w-xs truncate text-left hover:text-teal-700">
+                  {hymn.isAlbum ? hymn.albumName || hymn.title : hymn.title}
                 </button>
               </td>
               {showAudit && (
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900">{hymn.createdBy?.email || 'Legacy entry'}</div>
-                  <div className="text-xs text-gray-500">
+                <td>
+                  <div className="text-sm text-slate-900">{hymn.createdBy?.email || 'Legacy entry'}</div>
+                  <div className="text-xs text-slate-500">
                     Updated by {hymn.updatedBy?.email || hymn.createdBy?.email || 'Unknown'}
                   </div>
                 </td>
               )}
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <td className="whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex items-center justify-end gap-2">
                   <button
                     onClick={() => onView(hymn)}
-                    className="text-emerald-600 hover:text-emerald-900 p-2 rounded-lg hover:bg-emerald-50 transition-colors"
+                    className="admin-action-button"
                     title="View hymn details"
                   >
                     <Eye className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => onEdit(hymn)}
-                    className="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="admin-action-button"
                     title="Edit hymn"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => onDelete(hymn)}
-                    className="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                    className="admin-action-button admin-danger-button"
                     title="Delete hymn"
                   >
                     <Trash2 className="w-4 h-4" />

@@ -58,6 +58,25 @@ const parseSheetMusic = (raw) => {
 	}
 };
 
+const parseTracks = (raw) => {
+	if (Array.isArray(raw)) return raw;
+	try {
+		const parsed = JSON.parse(raw || "[]");
+		return Array.isArray(parsed) ? parsed : [];
+	} catch {
+		return [];
+	}
+};
+
+const normalizeTracks = (tracks) =>
+	(Array.isArray(tracks) ? tracks : []).map((track, index) => ({
+		id: track.id || `track-${index + 1}`,
+		trackNumber: Number(track.trackNumber) || index + 1,
+		title: track.title || "",
+		song: track.song || "",
+		audio: track.audio || "",
+	}));
+
 const getAuditActor = (req) => ({
 	id: String(req.user?.id || ""),
 	email: String(req.user?.email || ""),
@@ -98,6 +117,16 @@ const getHagerignaFromJson = async () => {
 		data.resources?.array?.find((arr) => arr._name === "sheet_music")?.item || [];
 	const audioArray =
 		data.resources?.array?.find((arr) => arr._name === "audio")?.item || [];
+	const isAlbumArray =
+		data.resources?.array?.find((arr) => arr._name === "is_album")?.item || [];
+	const albumNameArray =
+		data.resources?.array?.find((arr) => arr._name === "album_name")?.item || [];
+	const choirNameArray =
+		data.resources?.array?.find((arr) => arr._name === "choir_name")?.item || [];
+	const trackCountArray =
+		data.resources?.array?.find((arr) => arr._name === "track_count")?.item || [];
+	const tracksArray =
+		data.resources?.array?.find((arr) => arr._name === "tracks")?.item || [];
 
 	const maxLength = Math.max(artistArray.length, songArray.length, titleArray.length);
 	const hymns = [];
@@ -108,6 +137,11 @@ const getHagerignaFromJson = async () => {
 			artist: artistArray[i] || "",
 			song: songArray[i] || "",
 			title: titleArray[i] || "",
+			isAlbum: isAlbumArray[i] === "true",
+			albumName: albumNameArray[i] || undefined,
+			choirName: choirNameArray[i] || undefined,
+			trackCount: Number(trackCountArray[i]) || undefined,
+			tracks: parseTracks(tracksArray[i]),
 			category: categoryArray[i] || undefined,
 			sheet_music: sheetMusic.length ? sheetMusic : undefined,
 			audio: audioArray[i] || undefined,
@@ -167,6 +201,11 @@ const toMongoSafeHagerigna = (doc) => ({
 	artist: doc.artist || "",
 	song: doc.song || "",
 	title: doc.title || "",
+	isAlbum: Boolean(doc.isAlbum),
+	albumName: doc.albumName || undefined,
+	choirName: doc.choirName || undefined,
+	trackCount: doc.trackCount || (Array.isArray(doc.tracks) ? doc.tracks.length : 0) || undefined,
+	tracks: Array.isArray(doc.tracks) && doc.tracks.length ? normalizeTracks(doc.tracks) : undefined,
 	category: doc.category || undefined,
 	sheet_music: Array.isArray(doc.sheet_music) && doc.sheet_music.length ? doc.sheet_music : undefined,
 	audio: doc.audio || undefined,
@@ -264,6 +303,11 @@ router.post("/hagerigna", requireAuth, async (req, res) => {
 			artist: req.body.artist || "",
 			song: req.body.song || "",
 			title: req.body.title || "",
+			isAlbum: Boolean(req.body.isAlbum),
+			albumName: req.body.albumName || "",
+			choirName: req.body.choirName || "",
+			trackCount: Number(req.body.trackCount) || (Array.isArray(req.body.tracks) ? req.body.tracks.length : 0),
+			tracks: normalizeTracks(req.body.tracks),
 			category: req.body.category || "",
 			sheet_music: Array.isArray(req.body.sheet_music) ? req.body.sheet_music : [],
 			audio: req.body.audio || "",
@@ -326,6 +370,11 @@ router.put("/hagerigna/:id", requireAuth, async (req, res) => {
 			...(req.body.artist !== undefined ? { artist: req.body.artist } : {}),
 			...(req.body.song !== undefined ? { song: req.body.song } : {}),
 			...(req.body.title !== undefined ? { title: req.body.title } : {}),
+			...(req.body.isAlbum !== undefined ? { isAlbum: Boolean(req.body.isAlbum) } : {}),
+			...(req.body.albumName !== undefined ? { albumName: req.body.albumName } : {}),
+			...(req.body.choirName !== undefined ? { choirName: req.body.choirName } : {}),
+			...(req.body.trackCount !== undefined ? { trackCount: Number(req.body.trackCount) || 0 } : {}),
+			...(req.body.tracks !== undefined ? { tracks: normalizeTracks(req.body.tracks) } : {}),
 			...(req.body.category !== undefined ? { category: req.body.category } : {}),
 			...(req.body.sheet_music !== undefined ? { sheet_music: req.body.sheet_music } : {}),
 			...(req.body.audio !== undefined ? { audio: req.body.audio } : {}),
@@ -420,16 +469,29 @@ router.get("/hagerigna/search", async (req, res) => {
 			return res.json(
 				hymns.filter(
 					(h) =>
-						h.artist.toLowerCase().includes(query) ||
-						h.song.toLowerCase().includes(query) ||
-						h.title.toLowerCase().includes(query)
+					h.artist.toLowerCase().includes(query) ||
+					h.song.toLowerCase().includes(query) ||
+					h.title.toLowerCase().includes(query) ||
+					(h.albumName || "").toLowerCase().includes(query) ||
+					(h.choirName || "").toLowerCase().includes(query) ||
+					(h.tracks || []).some((track) =>
+						`${track.title || ""} ${track.song || ""}`.toLowerCase().includes(query)
+					)
 				)
 			);
 		}
 
 		const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
 		const rows = await HagerignaHymn.find({
-			$or: [{ artist: regex }, { song: regex }, { title: regex }],
+			$or: [
+				{ artist: regex },
+				{ song: regex },
+				{ title: regex },
+				{ albumName: regex },
+				{ choirName: regex },
+				{ "tracks.title": regex },
+				{ "tracks.song": regex },
+			],
 		})
 			.sort({ createdAt: 1 })
 			.lean();

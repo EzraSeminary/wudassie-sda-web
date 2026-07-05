@@ -15,6 +15,23 @@ const hagerignaSchema = new mongoose.Schema(
 		artist: { type: String, default: "" },
 		song: { type: String, default: "" },
 		title: { type: String, default: "" },
+		isAlbum: { type: Boolean, default: false },
+		albumName: { type: String, default: "" },
+		choirName: { type: String, default: "" },
+		trackCount: { type: Number, default: 0 },
+		tracks: {
+			type: [
+				{
+					id: { type: String, default: "" },
+					trackNumber: { type: Number, default: 0 },
+					title: { type: String, default: "" },
+					song: { type: String, default: "" },
+					audio: { type: String, default: "" },
+					_id: false,
+				},
+			],
+			default: [],
+		},
 		category: { type: String, default: "" },
 		sheet_music: { type: [String], default: [] },
 		audio: { type: String, default: "" },

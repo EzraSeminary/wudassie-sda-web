@@ -18,6 +18,78 @@
     @apply text-gray-900;
   }
 
+  .admin-console-bg {
+    background:
+      linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+      radial-gradient(circle at 18% 8%, rgba(20,184,166,0.18), transparent 28%),
+      radial-gradient(circle at 82% 12%, rgba(244,114,182,0.12), transparent 30%),
+      linear-gradient(135deg, #111827 0%, #0f172a 45%, #18181b 100%);
+    background-size: 48px 48px, 48px 48px, auto, auto, auto;
+  }
+
+  .admin-panel {
+    @apply border border-slate-200/80 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl;
+  }
+
+  .admin-panel-dark {
+    @apply border border-white/10 bg-slate-950/80 shadow-[0_24px_70px_rgba(0,0,0,0.25)] backdrop-blur-xl;
+  }
+
+  .admin-kicker {
+    @apply text-xs font-semibold uppercase tracking-[0.22em] text-slate-500;
+  }
+
+  .admin-input {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20;
+  }
+
+  .admin-surface input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+  .admin-surface textarea,
+  .admin-surface select {
+    @apply rounded-lg border-slate-300 bg-white shadow-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20;
+  }
+
+  .admin-surface label {
+    @apply text-slate-700;
+  }
+
+  .admin-form-card {
+    @apply rounded-2xl border border-slate-200 bg-slate-50/80 p-5;
+  }
+
+  .admin-data-table {
+    @apply min-w-full border-separate border-spacing-0;
+  }
+
+  .admin-data-table thead {
+    @apply bg-slate-950;
+  }
+
+  .admin-data-table th {
+    @apply px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300;
+  }
+
+  .admin-data-table tbody {
+    @apply divide-y divide-slate-200 bg-white;
+  }
+
+  .admin-data-table tr {
+    @apply transition-colors hover:bg-teal-50/55;
+  }
+
+  .admin-data-table td {
+    @apply px-5 py-4 align-top;
+  }
+
+  .admin-action-button {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700;
+  }
+
+  .admin-danger-button {
+    @apply hover:border-red-200 hover:bg-red-50 hover:text-red-700;
+  }
+
   .admin-surface input,
   .admin-surface textarea,
   .admin-surface select {

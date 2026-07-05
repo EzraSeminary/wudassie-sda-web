@@ -34,23 +34,23 @@ const HymnFilters: React.FC<HymnFiltersProps> = ({
     filters.hasSheetMusic !== 'all';
 
   return (
-    <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 mb-6">
+    <div className="admin-panel rounded-2xl p-5 mb-6">
       <div className="flex flex-col gap-5">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-teal-600 w-5 h-5" />
           <input
             type="text"
             placeholder={`Search ${hymnLabel} by title, lyrics, artist, number, or id...`}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
           />
         </div>
 
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
             <Filter className="w-4 h-4" />
-            Advanced Filters
+            Encoding Filters
           </div>
           {hasActiveFilters && (
             <button
@@ -65,11 +65,11 @@ const HymnFilters: React.FC<HymnFiltersProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <label className="block">
-            <span className="block text-sm font-medium text-gray-700 mb-2">Category</span>
+            <span className="block text-sm font-semibold text-slate-700 mb-2">Category</span>
             <select
               value={filters.category}
               onChange={(e) => onFilterChange({ ...filters, category: e.target.value })}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
             >
               <option value="">All categories</option>
               {categories.map((category) => (
@@ -81,11 +81,11 @@ const HymnFilters: React.FC<HymnFiltersProps> = ({
           </label>
 
           <label className="block">
-            <span className="block text-sm font-medium text-gray-700 mb-2">Audio</span>
+            <span className="block text-sm font-semibold text-slate-700 mb-2">Audio</span>
             <select
               value={filters.hasAudio}
               onChange={(e) => onFilterChange({ ...filters, hasAudio: e.target.value as HymnFilterState['hasAudio'] })}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
             >
               <option value="all">All hymns</option>
               <option value="yes">Has audio</option>
@@ -94,13 +94,13 @@ const HymnFilters: React.FC<HymnFiltersProps> = ({
           </label>
 
           <label className="block">
-            <span className="block text-sm font-medium text-gray-700 mb-2">Sheet Music</span>
+            <span className="block text-sm font-semibold text-slate-700 mb-2">Sheet Music</span>
             <select
               value={filters.hasSheetMusic}
               onChange={(e) =>
                 onFilterChange({ ...filters, hasSheetMusic: e.target.value as HymnFilterState['hasSheetMusic'] })
               }
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
             >
               <option value="all">All hymns</option>
               <option value="yes">Has sheet music</option>

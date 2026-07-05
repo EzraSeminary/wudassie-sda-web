@@ -89,6 +89,11 @@ export const appendToHagerignaFile = async (newHymn) => {
 	const categoryArray = getOrCreateArray(data, "category");
 	const sheetMusicArray = getOrCreateArray(data, "sheet_music");
 	const audioArray = getOrCreateArray(data, "audio");
+	const isAlbumArray = getOrCreateArray(data, "is_album");
+	const albumNameArray = getOrCreateArray(data, "album_name");
+	const choirNameArray = getOrCreateArray(data, "choir_name");
+	const trackCountArray = getOrCreateArray(data, "track_count");
+	const tracksArray = getOrCreateArray(data, "tracks");
 
 	artistArray.item.push(newHymn.artist || "");
 	songArray.item.push(newHymn.song || "");
@@ -96,6 +101,11 @@ export const appendToHagerignaFile = async (newHymn) => {
 	categoryArray.item.push(newHymn.category || "");
 	sheetMusicArray.item.push(JSON.stringify(newHymn.sheet_music || []));
 	audioArray.item.push(newHymn.audio || "");
+	isAlbumArray.item.push(newHymn.isAlbum ? "true" : "false");
+	albumNameArray.item.push(newHymn.albumName || "");
+	choirNameArray.item.push(newHymn.choirName || "");
+	trackCountArray.item.push(String(newHymn.trackCount || newHymn.tracks?.length || 0));
+	tracksArray.item.push(JSON.stringify(newHymn.tracks || []));
 
 	await writeJsonFile("HagerignaData.json", data);
 	return {
@@ -165,11 +175,21 @@ export const updateHagerignaFile = async (id, updatedHymn) => {
 	const categoryArray = getOrCreateArray(data, "category");
 	const sheetMusicArray = getOrCreateArray(data, "sheet_music");
 	const audioArray = getOrCreateArray(data, "audio");
+	const isAlbumArray = getOrCreateArray(data, "is_album");
+	const albumNameArray = getOrCreateArray(data, "album_name");
+	const choirNameArray = getOrCreateArray(data, "choir_name");
+	const trackCountArray = getOrCreateArray(data, "track_count");
+	const tracksArray = getOrCreateArray(data, "tracks");
 
 	// Ensure arrays are long enough
 	while (categoryArray.item.length <= index) categoryArray.item.push("");
 	while (sheetMusicArray.item.length <= index) sheetMusicArray.item.push("[]");
 	while (audioArray.item.length <= index) audioArray.item.push("");
+	while (isAlbumArray.item.length <= index) isAlbumArray.item.push("false");
+	while (albumNameArray.item.length <= index) albumNameArray.item.push("");
+	while (choirNameArray.item.length <= index) choirNameArray.item.push("");
+	while (trackCountArray.item.length <= index) trackCountArray.item.push("0");
+	while (tracksArray.item.length <= index) tracksArray.item.push("[]");
 
 	if (updatedHymn.artist !== undefined)
 		artistArray.item[index] = updatedHymn.artist;
@@ -182,6 +202,16 @@ export const updateHagerignaFile = async (id, updatedHymn) => {
 		sheetMusicArray.item[index] = JSON.stringify(updatedHymn.sheet_music || []);
 	if (updatedHymn.audio !== undefined)
 		audioArray.item[index] = updatedHymn.audio || "";
+	if (updatedHymn.isAlbum !== undefined)
+		isAlbumArray.item[index] = updatedHymn.isAlbum ? "true" : "false";
+	if (updatedHymn.albumName !== undefined)
+		albumNameArray.item[index] = updatedHymn.albumName || "";
+	if (updatedHymn.choirName !== undefined)
+		choirNameArray.item[index] = updatedHymn.choirName || "";
+	if (updatedHymn.trackCount !== undefined)
+		trackCountArray.item[index] = String(updatedHymn.trackCount || 0);
+	if (updatedHymn.tracks !== undefined)
+		tracksArray.item[index] = JSON.stringify(updatedHymn.tracks || []);
 
 	await writeJsonFile("HagerignaData.json", data);
 	
@@ -192,12 +222,23 @@ export const updateHagerignaFile = async (id, updatedHymn) => {
 	} catch {
 		sheetMusic = [];
 	}
+	let tracks = [];
+	try {
+		tracks = JSON.parse(tracksArray.item[index] || "[]");
+	} catch {
+		tracks = [];
+	}
 
 	return {
 		id,
 		artist: artistArray.item[index],
 		song: songArray.item[index],
 		title: titleArray.item[index],
+		isAlbum: isAlbumArray.item[index] === "true",
+		albumName: albumNameArray.item[index] || undefined,
+		choirName: choirNameArray.item[index] || undefined,
+		trackCount: Number(trackCountArray.item[index]) || undefined,
+		tracks: tracks.length > 0 ? tracks : undefined,
 		category: categoryArray.item[index] || undefined,
 		sheet_music: sheetMusic.length > 0 ? sheetMusic : undefined,
 		audio: audioArray.item[index] || undefined,
@@ -305,6 +346,11 @@ export const deleteFromHagerignaFile = async (id) => {
 	const categoryArray = findArrayByName(data, "category");
 	const sheetMusicArray = findArrayByName(data, "sheet_music");
 	const audioArray = findArrayByName(data, "audio");
+	const isAlbumArray = findArrayByName(data, "is_album");
+	const albumNameArray = findArrayByName(data, "album_name");
+	const choirNameArray = findArrayByName(data, "choir_name");
+	const trackCountArray = findArrayByName(data, "track_count");
+	const tracksArray = findArrayByName(data, "tracks");
 
 	artistArray.item.splice(index, 1);
 	songArray.item.splice(index, 1);
@@ -312,6 +358,11 @@ export const deleteFromHagerignaFile = async (id) => {
 	if (categoryArray) categoryArray.item.splice(index, 1);
 	if (sheetMusicArray) sheetMusicArray.item.splice(index, 1);
 	if (audioArray) audioArray.item.splice(index, 1);
+	if (isAlbumArray) isAlbumArray.item.splice(index, 1);
+	if (albumNameArray) albumNameArray.item.splice(index, 1);
+	if (choirNameArray) choirNameArray.item.splice(index, 1);
+	if (trackCountArray) trackCountArray.item.splice(index, 1);
+	if (tracksArray) tracksArray.item.splice(index, 1);
 
 	await writeJsonFile("HagerignaData.json", data);
 };
