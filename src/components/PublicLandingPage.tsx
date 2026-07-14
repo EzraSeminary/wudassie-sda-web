@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   BookOpen,
@@ -15,9 +15,11 @@ import {
   Youtube,
 } from 'lucide-react';
 import { hymnalService } from '../services/hymnalService';
-import { Category, HagerignaHymn, HymnalType, SDAHymn, YouTubeLink } from '../types/Song';
+import { Category, CreateSuggestionPayload, HagerignaHymn, HymnalType, SDAHymn, YouTubeLink } from '../types/Song';
 import HymnFilters, { HymnFilterState } from './HymnFilters';
 import HymnDetailModal from './HymnDetailModal';
+import SuggestEditModal from './SuggestEditModal';
+import { useToast } from './ui/Toaster';
 
 const defaultFilters: HymnFilterState = {
   category: '',
@@ -39,6 +41,22 @@ const getHymnNumber = (id: string) => {
 
 const normalizeSearch = (value: string) => value.trim().toLowerCase();
 
+const expandHagerignaAlbumsForPublicList = (hymns: HagerignaHymn[]) =>
+  hymns.flatMap((hymn) => {
+    if (!hymn.isAlbum || !hymn.tracks?.length) return [hymn];
+
+    return hymn.tracks.map((track) => ({
+      ...hymn,
+      id: `${hymn.id}-track-${track.id || track.trackNumber}`,
+      artist: hymn.choirName || hymn.artist,
+      title: track.title,
+      song: track.song,
+      isAlbum: false,
+      audio: track.audio || '',
+      sheet_music: [],
+    }));
+  });
+
 const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) => {
   const [activeSection, setActiveSection] = useState<PublicSection>('home');
   const [categories, setCategories] = useState<Category[]>([]);
@@ -51,8 +69,12 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
   const [selectedHagerignaHymn, setSelectedHagerignaHymn] = useState<HagerignaHymn | null>(null);
   const [selectedSDAHymn, setSelectedSDAHymn] = useState<SDAHymn | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [suggestionHymn, setSuggestionHymn] = useState<HagerignaHymn | SDAHymn | null>(null);
+  const [suggestionType, setSuggestionType] = useState<HymnalType>('sda');
   const [detailType, setDetailType] = useState<HymnalType>('sda');
   const [sortOption, setSortOption] = useState<SortOption>('default');
+  const { showToast } = useToast();
 
   const loadPublicData = useCallback(async () => {
     try {
@@ -78,6 +100,11 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
       console.error('Failed to load public website data:', error);
     });
   }, [loadPublicData]);
+
+  const publicHagerignaHymns = useMemo(
+    () => expandHagerignaAlbumsForPublicList(hagerignaHymns),
+    [hagerignaHymns]
+  );
 
   const applyHymnFilters = <T extends HagerignaHymn | SDAHymn>(
     hymns: T[],
@@ -115,12 +142,14 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
     );
   });
 
-  const filteredHagerigna = applyHymnFilters(hagerignaHymns, (hymn, query, digits) => {
+  const filteredHagerigna = applyHymnFilters(publicHagerignaHymns, (hymn, query, digits) => {
     const hymnNumber = getHymnNumber(hymn.id);
     return (
       hymn.title.toLowerCase().includes(query) ||
       hymn.artist.toLowerCase().includes(query) ||
       hymn.song.toLowerCase().includes(query) ||
+      (hymn.albumName || '').toLowerCase().includes(query) ||
+      (hymn.choirName || '').toLowerCase().includes(query) ||
       hymn.id.toLowerCase().includes(query) ||
       (digits.length > 0 && hymnNumber.includes(digits))
     );
@@ -171,6 +200,17 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
       setSelectedHagerignaHymn(null);
     }
     setShowDetailModal(true);
+  };
+
+  const openSuggestion = (hymn: HagerignaHymn | SDAHymn, type: HymnalType) => {
+    setSuggestionType(type);
+    setSuggestionHymn(hymn);
+    setShowSuggestionModal(true);
+  };
+
+  const handleSubmitSuggestion = async (payload: CreateSuggestionPayload) => {
+    await hymnalService.createSuggestion(payload);
+    showToast('Suggestion sent for admin review', 'success');
   };
 
   const navButtonClass = (section: PublicSection) =>
@@ -450,7 +490,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
                         <span className="text-sm text-[#cdbfb4]">SDA hymns</span>
                       </div>
                       <div className="glass-stat glass-stat--dark">
-                        <span className="text-3xl font-semibold text-white">{hagerignaHymns.length}</span>
+                        <span className="text-3xl font-semibold text-white">{publicHagerignaHymns.length}</span>
                         <span className="text-sm text-[#cdbfb4]">Hagerigna songs</span>
                       </div>
                       <div className="glass-stat glass-stat--dark">
@@ -588,11 +628,23 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
         isOpen={showDetailModal}
         hymn={detailType === 'hagerigna' ? selectedHagerignaHymn : selectedSDAHymn}
         type={detailType}
+        onSuggestEdit={openSuggestion}
         onClose={() => {
           setShowDetailModal(false);
           setSelectedHagerignaHymn(null);
           setSelectedSDAHymn(null);
         }}
+      />
+
+      <SuggestEditModal
+        isOpen={showSuggestionModal}
+        hymn={suggestionHymn}
+        type={suggestionType}
+        onClose={() => {
+          setShowSuggestionModal(false);
+          setSuggestionHymn(null);
+        }}
+        onSubmit={handleSubmitSuggestion}
       />
     </div>
   );

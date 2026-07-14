@@ -10,6 +10,7 @@ import hymnRoutes from "./routes/hymns.js";
 import uploadRoutes from "./routes/upload.js";
 import youtubeLinksRoutes from "./routes/youtubeLinks.js";
 import authRoutes, { seedAdminUser } from "./routes/auth.js";
+import suggestionRoutes from "./routes/suggestions.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { connectToMongo } from "./db/mongo.js";
 
@@ -132,6 +133,7 @@ app.use("/api/songs", songRoutes);
 app.use("/api", hymnRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api", youtubeLinksRoutes);
+app.use("/api", suggestionRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

@@ -11,6 +11,8 @@ interface EditHagerignaModalProps {
   onSubmit: (hymnData: Partial<HagerignaHymn>) => void;
 }
 
+const showRealLineBreaks = (value?: string) => (value || '').replace(/\\n/g, '\n');
+
 const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
   isOpen,
   hymn,
@@ -40,13 +42,16 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
     if (hymn) {
       setFormData({
         artist: hymn.artist || '',
-        song: hymn.song || '',
+        song: showRealLineBreaks(hymn.song),
         title: hymn.title || '',
         isAlbum: Boolean(hymn.isAlbum),
         albumName: hymn.albumName || hymn.title || '',
         choirName: hymn.choirName || hymn.artist || '',
         trackCount: hymn.tracks?.length || hymn.trackCount || 0,
-        tracks: hymn.tracks || [],
+        tracks: (hymn.tracks || []).map((track) => ({
+          ...track,
+          song: showRealLineBreaks(track.song),
+        })),
         category: hymn.category || '',
         sheet_music: hymn.sheet_music || [],
         audio: hymn.audio || '',

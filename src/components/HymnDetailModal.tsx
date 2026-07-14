@@ -1,5 +1,5 @@
 import React from 'react';
-import { Disc3, ExternalLink, FileText, Image as ImageIcon, Music2, Tag, X } from 'lucide-react';
+import { Disc3, ExternalLink, FileText, Image as ImageIcon, Music2, Send, Tag, X } from 'lucide-react';
 import Modal from './ui/Modal';
 import { HagerignaHymn, HymnalType, SDAHymn } from '../types/Song';
 
@@ -10,6 +10,7 @@ interface HymnDetailModalProps {
   hymn: HymnDetail | null;
   type: HymnalType;
   showAudit?: boolean;
+  onSuggestEdit?: (hymn: HymnDetail, type: HymnalType) => void;
   onClose: () => void;
 }
 
@@ -22,7 +23,14 @@ const formatDate = (value?: string) => {
   return date.toLocaleString();
 };
 
-const HymnDetailModal: React.FC<HymnDetailModalProps> = ({ isOpen, hymn, type, showAudit = false, onClose }) => {
+const HymnDetailModal: React.FC<HymnDetailModalProps> = ({
+  isOpen,
+  hymn,
+  type,
+  showAudit = false,
+  onSuggestEdit,
+  onClose,
+}) => {
   if (!hymn) return null;
 
   const isAlbum = type === 'hagerigna' && Boolean((hymn as HagerignaHymn).isAlbum);
@@ -47,13 +55,24 @@ const HymnDetailModal: React.FC<HymnDetailModalProps> = ({ isOpen, hymn, type, s
               {subtitle && <p className="text-white/85 mt-2">{subtitle}</p>}
               {secondaryTitle && <p className="text-sm text-white/70 mt-1">Legacy title: {secondaryTitle}</p>}
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-xl hover:bg-white/15 transition-colors"
-              aria-label="Close hymn details"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {onSuggestEdit && (
+                <button
+                  onClick={() => onSuggestEdit(hymn, type)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-400 text-slate-950 hover:bg-teal-300 transition-colors font-semibold"
+                >
+                  <Send className="w-4 h-4" />
+                  Suggest Edit
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 rounded-xl hover:bg-white/15 transition-colors"
+                aria-label="Close hymn details"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 

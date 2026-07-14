@@ -11,6 +11,8 @@ interface EditSDAModalProps {
   onSubmit: (hymnData: Partial<SDAHymn>) => void;
 }
 
+const showRealLineBreaks = (value?: string) => (value || '').replace(/\\n/g, '\n');
+
 const EditSDAModal: React.FC<EditSDAModalProps> = ({
   isOpen,
   hymn,
@@ -34,7 +36,7 @@ const EditSDAModal: React.FC<EditSDAModalProps> = ({
     if (hymn) {
       setFormData({
         newHymnalTitle: hymn.newHymnalTitle || '',
-        newHymnalLyrics: hymn.newHymnalLyrics || '',
+        newHymnalLyrics: showRealLineBreaks(hymn.newHymnalLyrics),
         englishTitleOld: hymn.englishTitleOld || '',
         category: hymn.category || '',
         sheet_music: hymn.sheet_music || [],

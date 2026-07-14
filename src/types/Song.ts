@@ -115,3 +115,33 @@ export const HYMN_CATEGORIES = [
 export type HymnalType = 'hagerigna' | 'sda';
 
 export type Hymn = HagerignaHymn | SDAHymn;
+
+export type SuggestionStatus = 'pending' | 'applied';
+
+export interface HymnEditSuggestion {
+  id: string;
+  hymnalType: HymnalType;
+  hymnId: string;
+  hymnTitle: string;
+  originalData: Partial<HagerignaHymn & SDAHymn>;
+  requestedData: Partial<HagerignaHymn & SDAHymn>;
+  submitterName?: string;
+  submitterEmail?: string;
+  note?: string;
+  status: SuggestionStatus;
+  createdAt?: string;
+  updatedAt?: string;
+  appliedAt?: string;
+  appliedBy?: AuditUser | null;
+}
+
+export interface CreateSuggestionPayload {
+  hymnalType: HymnalType;
+  hymnId: string;
+  hymnTitle: string;
+  originalData: Partial<HagerignaHymn & SDAHymn>;
+  requestedData: Partial<HagerignaHymn & SDAHymn>;
+  submitterName?: string;
+  submitterEmail?: string;
+  note?: string;
+}

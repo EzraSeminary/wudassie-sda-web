@@ -1,4 +1,13 @@
-import { Category, HagerignaHymn, ManagedUser, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
+import {
+  Category,
+  CreateSuggestionPayload,
+  HagerignaHymn,
+  HymnEditSuggestion,
+  ManagedUser,
+  SDAHymn,
+  HymnalType,
+  YouTubeLink,
+} from '../types/Song';
 import { API_BASE_URL } from '../config/api';
 
 interface AddYouTubeLinkResponse extends YouTubeLink {
@@ -283,6 +292,39 @@ class HymnalService {
       }
       throw new Error(message);
     }
+  }
+
+  async createSuggestion(payload: CreateSuggestionPayload): Promise<HymnEditSuggestion> {
+    const response = await fetch(`${this.baseUrl}/suggestions`, {
+      ...this.fetchOptions,
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(data?.error || 'Failed to submit suggestion');
+    }
+    return data;
+  }
+
+  async getSuggestions(): Promise<HymnEditSuggestion[]> {
+    const response = await fetch(`${this.baseUrl}/suggestions`, this.fetchOptions);
+    if (!response.ok) {
+      throw new Error('Failed to fetch suggestions');
+    }
+    return await response.json();
+  }
+
+  async applySuggestion(id: string): Promise<HymnEditSuggestion> {
+    const response = await fetch(`${this.baseUrl}/suggestions/${id}/apply`, {
+      ...this.fetchOptions,
+      method: 'POST',
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(data?.error || 'Failed to apply suggestion');
+    }
+    return data;
   }
 
   async addYouTubeLink(payload: { url: string }): Promise<AddYouTubeLinkResponse> {

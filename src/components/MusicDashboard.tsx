@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Disc3, Music, Plus, BookOpen, Heart, Youtube, Trash2, LogOut, ShieldPlus } from 'lucide-react';
+import { Disc3, Music, Plus, BookOpen, Heart, Youtube, Trash2, LogOut, ShieldPlus, MessageSquareText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import HagerignaTable from './HagerignaTable';
 import SDATable from './SDATable';
@@ -12,10 +12,11 @@ import EditHagerignaModal from './EditHagerignaModal';
 import EditSDAModal from './EditSDAModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import EncoderManagementPanel from './EncoderManagementPanel';
+import SuggestionsPanel from './SuggestionsPanel';
 import LoadingSpinner from './ui/LoadingSpinner';
 import { useToast } from './ui/Toaster';
 import { hymnalService } from '../services/hymnalService';
-import { Category, HagerignaHymn, ManagedUser, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
+import { Category, HagerignaHymn, HymnEditSuggestion, ManagedUser, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
 
 const extractVideoId = (url: string) => {
   const trimmed = url.trim();
@@ -39,7 +40,7 @@ const defaultFilters: HymnFilterState = {
 const MusicDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const [activeSection, setActiveSection] = useState<'sda' | 'hagerigna' | 'youtube' | 'encoders'>('sda');
+  const [activeSection, setActiveSection] = useState<'sda' | 'hagerigna' | 'youtube' | 'encoders' | 'suggestions'>('sda');
   const [activeHymnal, setActiveHymnal] = useState<HymnalType>('sda');
   const [hagerignaHymns, setHagerignaHymns] = useState<HagerignaHymn[]>([]);
   const [sdaHymns, setSdaHymns] = useState<SDAHymn[]>([]);
@@ -56,6 +57,9 @@ const MusicDashboard: React.FC = () => {
   const [usersLoading, setUsersLoading] = useState(false);
   const [creatingEncoder, setCreatingEncoder] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<HymnEditSuggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [applyingSuggestionId, setApplyingSuggestionId] = useState<string | null>(null);
   
   // Modal states
   const [showAddHagerignaModal, setShowAddHagerignaModal] = useState(false);
@@ -128,6 +132,24 @@ const MusicDashboard: React.FC = () => {
       showToast('Failed to load encoder accounts', 'error');
     } finally {
       setUsersLoading(false);
+    }
+  }, [isAdmin, showToast]);
+
+  const loadSuggestions = useCallback(async () => {
+    if (!isAdmin) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      setSuggestionsLoading(true);
+      const suggestionData = await hymnalService.getSuggestions();
+      setSuggestions(suggestionData);
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      showToast('Failed to load suggestions', 'error');
+    } finally {
+      setSuggestionsLoading(false);
     }
   }, [isAdmin, showToast]);
 
@@ -250,6 +272,23 @@ const MusicDashboard: React.FC = () => {
     }
   };
 
+  const handleApplySuggestion = async (suggestion: HymnEditSuggestion) => {
+    const confirmed = window.confirm('Apply this suggested update to the live hymn record?');
+    if (!confirmed) return;
+
+    try {
+      setApplyingSuggestionId(suggestion.id);
+      await hymnalService.applySuggestion(suggestion.id);
+      await Promise.all([loadSuggestions(), loadHymns()]);
+      showToast('Suggestion applied', 'success');
+    } catch (error) {
+      console.error('Failed to apply suggestion:', error);
+      showToast(error instanceof Error ? error.message : 'Failed to apply suggestion', 'error');
+    } finally {
+      setApplyingSuggestionId(null);
+    }
+  };
+
   useEffect(() => {
     loadHymns();
   }, [loadHymns]);
@@ -265,6 +304,10 @@ const MusicDashboard: React.FC = () => {
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  useEffect(() => {
+    loadSuggestions();
+  }, [loadSuggestions]);
 
   useEffect(() => {
     const lowerQuery = searchQuery.trim().toLowerCase();
@@ -491,6 +534,8 @@ const MusicDashboard: React.FC = () => {
                 <p className="text-slate-300 mt-1">
                   {activeSection === 'encoders'
                     ? `Manage encoder accounts • ${users.filter((entry) => entry.role === 'encoder').length} encoders`
+                    : activeSection === 'suggestions'
+                    ? `Review user suggestions • ${suggestions.filter((entry) => entry.status === 'pending').length} pending`
                     : activeSection === 'youtube'
                     ? `Manage your YouTube links • ${youtubeLinks.length} links`
                     : `Manage your hymnal collections • ${getCurrentCount()} hymns`}
@@ -499,7 +544,7 @@ const MusicDashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-3">
-              {activeSection !== 'youtube' && activeSection !== 'encoders' && (
+              {activeSection !== 'youtube' && activeSection !== 'encoders' && activeSection !== 'suggestions' && (
                 <>
                   <button
                     onClick={() => activeHymnal === 'hagerigna' ? setShowAddHagerignaModal(true) : setShowAddSDAModal(true)}
@@ -597,11 +642,25 @@ const MusicDashboard: React.FC = () => {
                 Encoders ({users.filter((entry) => entry.role === 'encoder').length})
               </button>
             )}
+
+            {isAdmin && (
+              <button
+                onClick={() => setActiveSection('suggestions')}
+                className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
+                  activeSection === 'suggestions'
+                    ? 'bg-slate-950 text-white shadow-lg'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <MessageSquareText className="w-6 h-6" />
+                Suggestions ({suggestions.filter((entry) => entry.status === 'pending').length})
+              </button>
+            )}
           </div>
         </div>
 
         {/* Search and Filters */}
-        {activeSection !== 'youtube' && activeSection !== 'encoders' && (
+        {activeSection !== 'youtube' && activeSection !== 'encoders' && activeSection !== 'suggestions' && (
           <HymnFilters
             hymnLabel={activeHymnal === 'sda' ? 'SDA hymns' : 'Hagerigna hymns'}
             categories={categories}
@@ -722,8 +781,17 @@ const MusicDashboard: React.FC = () => {
           />
         )}
 
+        {activeSection === 'suggestions' && isAdmin && (
+          <SuggestionsPanel
+            suggestions={suggestions}
+            loading={suggestionsLoading}
+            applyingId={applyingSuggestionId}
+            onApply={handleApplySuggestion}
+          />
+        )}
+
                 {/* Hymns Display */}
-        {activeSection !== 'youtube' && activeSection !== 'encoders' && (
+        {activeSection !== 'youtube' && activeSection !== 'encoders' && activeSection !== 'suggestions' && (
           <div className="admin-panel rounded-2xl overflow-hidden">
           {(() => {
             // console.log('Rendering hymns display. Active hymnal:', activeHymnal, 'Current count:', getCurrentCount(), 'Filtered hymns:', activeHymnal === 'hagerigna' ? filteredHagerignaHymns.length : filteredSdaHymns.length);
