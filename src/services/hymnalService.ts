@@ -19,6 +19,20 @@ interface AddYouTubeLinksResult {
   duplicates: string[];
 }
 
+const getHymnOrder = (id: string) => {
+  const prefixedMatch = String(id || '').match(/^(?:sda|hagerigna)-(\d+)/i);
+  if (prefixedMatch) return Number(prefixedMatch[1]);
+  const trailingMatch = String(id || '').match(/(\d+)$/);
+  return trailingMatch ? Number(trailingMatch[1]) : Number.MAX_SAFE_INTEGER;
+};
+
+const sortByHymnNumber = <T extends { id: string }>(items: T[]) =>
+  [...items].sort((a, b) => {
+    const orderDiff = getHymnOrder(a.id) - getHymnOrder(b.id);
+    if (orderDiff !== 0) return orderDiff;
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
+
 class HymnalService {
   private baseUrl = API_BASE_URL;
   private token: string | null = null;
@@ -45,7 +59,7 @@ class HymnalService {
       }
       const data = await response.json();
       // console.log('Raw Hagerigna API response:', data.slice(0, 2));
-      return data; // API already returns the correct format
+      return sortByHymnNumber(data);
     } catch (error) {
       console.error('Error fetching Hagerigna hymns:', error);
       throw error;
@@ -60,7 +74,7 @@ class HymnalService {
       }
       const data = await response.json();
       // console.log('Raw SDA API response:', data.slice(0, 2));
-      return data; // API already returns the correct format
+      return sortByHymnNumber(data);
     } catch (error) {
       console.error('Error fetching SDA hymns:', error);
       throw error;

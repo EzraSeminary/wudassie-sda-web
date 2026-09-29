@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   BookOpen,
-  ChevronDown,
   ExternalLink,
   Headphones,
   Home,
@@ -28,16 +27,27 @@ const defaultFilters: HymnFilterState = {
 };
 
 type PublicSection = 'home' | 'sda' | 'hagerigna' | 'youtube';
-type SortOption = 'default' | 'title-asc' | 'title-desc' | 'number-asc' | 'number-desc';
 
 interface PublicLandingPageProps {
   onAdminLogin: () => void;
 }
 
 const getHymnNumber = (id: string) => {
-  const match = String(id || '').match(/(\d+)$/);
+  const match = String(id || '').match(/^(?:sda|hagerigna)-(\d+)/i) || String(id || '').match(/(\d+)$/);
   return match ? match[1] : '';
 };
+
+const getHymnOrder = (id: string) => {
+  const hymnNumber = getHymnNumber(id);
+  return hymnNumber ? Number(hymnNumber) : Number.MAX_SAFE_INTEGER;
+};
+
+const sortByHymnNumber = <T extends HagerignaHymn | SDAHymn>(hymns: T[]) =>
+  [...hymns].sort((a, b) => {
+    const orderDiff = getHymnOrder(a.id) - getHymnOrder(b.id);
+    if (orderDiff !== 0) return orderDiff;
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
 
 const normalizeSearch = (value: string) => value.trim().toLowerCase();
 
@@ -73,7 +83,6 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
   const [suggestionHymn, setSuggestionHymn] = useState<HagerignaHymn | SDAHymn | null>(null);
   const [suggestionType, setSuggestionType] = useState<HymnalType>('sda');
   const [detailType, setDetailType] = useState<HymnalType>('sda');
-  const [sortOption, setSortOption] = useState<SortOption>('default');
   const { showToast } = useToast();
 
   const loadPublicData = useCallback(async () => {
@@ -87,8 +96,8 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
       ]);
 
       setCategories(categoryData);
-      setHagerignaHymns(hagerignaData);
-      setSdaHymns(sdaData);
+      setHagerignaHymns(sortByHymnNumber(hagerignaData));
+      setSdaHymns(sortByHymnNumber(sdaData));
       setYoutubeLinks(youtubeData);
     } finally {
       setLoading(false);
@@ -168,27 +177,8 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
     );
   });
 
-  const sortHymns = <T extends HagerignaHymn | SDAHymn>(
-    hymns: T[],
-    getTitle: (hymn: T) => string
-  ) => {
-    const sorted = [...hymns];
-
-    if (sortOption === 'title-asc') {
-      sorted.sort((a, b) => getTitle(a).localeCompare(getTitle(b)));
-    } else if (sortOption === 'title-desc') {
-      sorted.sort((a, b) => getTitle(b).localeCompare(getTitle(a)));
-    } else if (sortOption === 'number-asc') {
-      sorted.sort((a, b) => Number(getHymnNumber(a.id) || '999999') - Number(getHymnNumber(b.id) || '999999'));
-    } else if (sortOption === 'number-desc') {
-      sorted.sort((a, b) => Number(getHymnNumber(b.id) || '0') - Number(getHymnNumber(a.id) || '0'));
-    }
-
-    return sorted;
-  };
-
-  const sortedSda = sortHymns(filteredSda, (hymn) => hymn.newHymnalTitle);
-  const sortedHagerigna = sortHymns(filteredHagerigna, (hymn) => hymn.title);
+  const sortedSda = sortByHymnNumber(filteredSda);
+  const sortedHagerigna = sortByHymnNumber(filteredHagerigna);
 
   const openDetail = (hymn: HagerignaHymn | SDAHymn, type: HymnalType) => {
     setDetailType(type);
@@ -354,21 +344,6 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
           <div className="text-sm text-[#b9aca0]">
             {activeSection === 'sda' ? `${sortedSda.length} hymns` : `${sortedHagerigna.length} hymns`}
           </div>
-          <label className="relative inline-flex items-center">
-            <span className="sr-only">Sort hymns</span>
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value as SortOption)}
-              className="appearance-none rounded-2xl border border-[#2f2622] bg-[#15110f] px-4 py-3 pr-10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#ffb347]"
-            >
-              <option value="default">Default order</option>
-              <option value="title-asc">Title A-Z</option>
-              <option value="title-desc">Title Z-A</option>
-              <option value="number-asc">Number low-high</option>
-              <option value="number-desc">Number high-low</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3 w-4 h-4 text-[#cdbfb4]" />
-          </label>
         </div>
 
         <HymnFilters

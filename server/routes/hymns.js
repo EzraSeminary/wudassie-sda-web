@@ -102,6 +102,18 @@ const ensureCategory = async (name) => {
 	);
 };
 
+const getHymnOrder = (id) => {
+	const match = String(id || "").match(/-(\d+)$/);
+	return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+};
+
+const sortByHymnalOrder = (rows) =>
+	[...rows].sort((a, b) => {
+		const orderDiff = getHymnOrder(a.id) - getHymnOrder(b.id);
+		if (orderDiff !== 0) return orderDiff;
+		return String(a.id || "").localeCompare(String(b.id || ""));
+	});
+
 const getHagerignaFromJson = async () => {
 	const data = await readJsonFile("HagerignaData.json");
 	const artistArray =
@@ -275,8 +287,8 @@ router.get("/hagerigna", async (req, res) => {
 		if (!isMongoConnected()) {
 			return res.json(await getHagerignaFromJson());
 		}
-		const rows = await HagerignaHymn.find().sort({ createdAt: 1 }).lean();
-		res.json(rows.map(toMongoSafeHagerigna));
+		const rows = await HagerignaHymn.find().lean();
+		res.json(sortByHymnalOrder(rows).map(toMongoSafeHagerigna));
 	} catch (error) {
 		console.error("Error fetching Hagerigna hymns:", error);
 		res.status(500).json({ error: "Failed to fetch Hagerigna hymns" });
@@ -288,8 +300,8 @@ router.get("/sda", async (req, res) => {
 		if (!isMongoConnected()) {
 			return res.json(await getSdaFromJson());
 		}
-		const rows = await SDAHymn.find().sort({ createdAt: 1 }).lean();
-		res.json(rows.map(toMongoSafeSda));
+		const rows = await SDAHymn.find().lean();
+		res.json(sortByHymnalOrder(rows).map(toMongoSafeSda));
 	} catch (error) {
 		console.error("Error fetching SDA hymns:", error);
 		res.status(500).json({ error: "Failed to fetch SDA hymns" });
@@ -505,10 +517,8 @@ router.get("/hagerigna/search", async (req, res) => {
 				{ "tracks.title": regex },
 				{ "tracks.song": regex },
 			],
-		})
-			.sort({ createdAt: 1 })
-			.lean();
-		res.json(rows.map(toMongoSafeHagerigna));
+		}).lean();
+		res.json(sortByHymnalOrder(rows).map(toMongoSafeHagerigna));
 	} catch (error) {
 		console.error("Error searching Hagerigna hymns:", error);
 		res.status(500).json({ error: "Failed to search Hagerigna hymns" });
@@ -543,10 +553,8 @@ router.get("/sda/search", async (req, res) => {
 				{ newHymnalLyrics: regex },
 				{ oldHymnalLyrics: regex },
 			],
-		})
-			.sort({ createdAt: 1 })
-			.lean();
-		res.json(rows.map(toMongoSafeSda));
+		}).lean();
+		res.json(sortByHymnalOrder(rows).map(toMongoSafeSda));
 	} catch (error) {
 		console.error("Error searching SDA hymns:", error);
 		res.status(500).json({ error: "Failed to search SDA hymns" });

@@ -18,9 +18,6 @@ const HagerignaTable: React.FC<HagerignaTableProps> = ({ hymns, showAudit = fals
       <table className="admin-data-table">
         <thead>
           <tr>
-            <th className="w-16">
-              #
-            </th>
             <th>
               Artist
             </th>
@@ -41,11 +38,8 @@ const HagerignaTable: React.FC<HagerignaTableProps> = ({ hymns, showAudit = fals
           </tr>
         </thead>
         <tbody>
-          {hymns.map((hymn, index) => (
+          {hymns.map((hymn) => (
             <tr key={hymn.id}>
-              <td className="whitespace-nowrap text-sm font-semibold text-slate-500 tabular-nums">
-                {index + 1}
-              </td>
               <td className="whitespace-nowrap">
                 <button onClick={() => onView(hymn)} className="text-sm font-semibold text-slate-950 hover:text-teal-700 text-left">
                   {hymn.isAlbum ? (

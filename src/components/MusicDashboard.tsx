@@ -37,6 +37,18 @@ const defaultFilters: HymnFilterState = {
   hasSheetMusic: 'all',
 };
 
+const getHymnOrder = (id: string) => {
+  const match = String(id || '').match(/^(?:sda|hagerigna)-(\d+)/i) || String(id || '').match(/(\d+)$/);
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+};
+
+const sortByHymnNumber = <T extends HagerignaHymn | SDAHymn>(hymns: T[]) =>
+  [...hymns].sort((a, b) => {
+    const orderDiff = getHymnOrder(a.id) - getHymnOrder(b.id);
+    if (orderDiff !== 0) return orderDiff;
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
+
 const MusicDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -85,10 +97,12 @@ const MusicDashboard: React.FC = () => {
         hymnalService.getSDAHymns()
       ]);
     
-      setHagerignaHymns(hagerignaData);
-      setSdaHymns(sdaData);
-      setFilteredHagerignaHymns(hagerignaData);
-      setFilteredSdaHymns(sdaData);
+      const orderedHagerigna = sortByHymnNumber(hagerignaData);
+      const orderedSda = sortByHymnNumber(sdaData);
+      setHagerignaHymns(orderedHagerigna);
+      setSdaHymns(orderedSda);
+      setFilteredHagerignaHymns(orderedHagerigna);
+      setFilteredSdaHymns(orderedSda);
     } catch (error) {
       console.error('Error loading hymns:', error);
       showToast('Failed to load hymns', 'error');
@@ -349,8 +363,8 @@ const MusicDashboard: React.FC = () => {
       return matchesSearch && matchesCommonFilters(hymn.category, hymn.audio, hymn.sheet_music);
     });
 
-    setFilteredHagerignaHymns(filteredHagerigna);
-    setFilteredSdaHymns(filteredSda);
+    setFilteredHagerignaHymns(sortByHymnNumber(filteredHagerigna));
+    setFilteredSdaHymns(sortByHymnNumber(filteredSda));
   }, [searchQuery, filters, hagerignaHymns, sdaHymns]);
 
   // Hagerigna hymn handlers
