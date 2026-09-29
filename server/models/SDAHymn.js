@@ -18,6 +18,7 @@ const sdaSchema = new mongoose.Schema(
 		englishTitleOld: { type: String, default: "" },
 		oldHymnalLyrics: { type: String, default: "" },
 		category: { type: String, default: "" },
+		key: { type: String, default: "" },
 		sheet_music: { type: [String], default: [] },
 		audio: { type: String, default: "" },
 		createdBy: { type: auditUserSchema, default: null },

@@ -74,6 +74,7 @@ const normalizeTracks = (tracks) =>
 		trackNumber: Number(track.trackNumber) || index + 1,
 		title: track.title || "",
 		song: track.song || "",
+		key: track.key || "",
 		audio: track.audio || "",
 	}));
 
@@ -113,6 +114,8 @@ const getHagerignaFromJson = async () => {
 		[];
 	const categoryArray =
 		data.resources?.array?.find((arr) => arr._name === "category")?.item || [];
+	const keyArray =
+		data.resources?.array?.find((arr) => arr._name === "key")?.item || [];
 	const sheetMusicArray =
 		data.resources?.array?.find((arr) => arr._name === "sheet_music")?.item || [];
 	const audioArray =
@@ -143,6 +146,7 @@ const getHagerignaFromJson = async () => {
 			trackCount: Number(trackCountArray[i]) || undefined,
 			tracks: parseTracks(tracksArray[i]),
 			category: categoryArray[i] || undefined,
+			key: keyArray[i] || undefined,
 			sheet_music: sheetMusic.length ? sheetMusic : undefined,
 			audio: audioArray[i] || undefined,
 		});
@@ -166,6 +170,8 @@ const getSdaFromJson = async () => {
 		data.resources?.array?.find((arr) => arr._name === "old_song")?.item || [];
 	const categoryArray =
 		data.resources?.array?.find((arr) => arr._name === "category")?.item || [];
+	const keyArray =
+		data.resources?.array?.find((arr) => arr._name === "key")?.item || [];
 	const sheetMusicArray =
 		data.resources?.array?.find((arr) => arr._name === "sheet_music")?.item || [];
 	const audioArray =
@@ -189,6 +195,7 @@ const getSdaFromJson = async () => {
 			englishTitleOld: englishTitleArray[i] || "",
 			oldHymnalLyrics: oldLyricsArray[i] || "",
 			category: categoryArray[i] || undefined,
+			key: keyArray[i] || undefined,
 			sheet_music: sheetMusic.length ? sheetMusic : undefined,
 			audio: audioArray[i] || undefined,
 		});
@@ -207,6 +214,7 @@ const toMongoSafeHagerigna = (doc) => ({
 	trackCount: doc.trackCount || (Array.isArray(doc.tracks) ? doc.tracks.length : 0) || undefined,
 	tracks: Array.isArray(doc.tracks) && doc.tracks.length ? normalizeTracks(doc.tracks) : undefined,
 	category: doc.category || undefined,
+	key: doc.key || undefined,
 	sheet_music: Array.isArray(doc.sheet_music) && doc.sheet_music.length ? doc.sheet_music : undefined,
 	audio: doc.audio || undefined,
 	createdBy: doc.createdBy || null,
@@ -223,6 +231,7 @@ const toMongoSafeSda = (doc) => ({
 	englishTitleOld: doc.englishTitleOld || "",
 	oldHymnalLyrics: doc.oldHymnalLyrics || "",
 	category: doc.category || undefined,
+	key: doc.key || undefined,
 	sheet_music: Array.isArray(doc.sheet_music) && doc.sheet_music.length ? doc.sheet_music : undefined,
 	audio: doc.audio || undefined,
 	createdBy: doc.createdBy || null,
@@ -309,6 +318,7 @@ router.post("/hagerigna", requireAuth, async (req, res) => {
 			trackCount: Number(req.body.trackCount) || (Array.isArray(req.body.tracks) ? req.body.tracks.length : 0),
 			tracks: normalizeTracks(req.body.tracks),
 			category: req.body.category || "",
+			key: req.body.key || "",
 			sheet_music: Array.isArray(req.body.sheet_music) ? req.body.sheet_music : [],
 			audio: req.body.audio || "",
 			createdBy: actor,
@@ -342,6 +352,7 @@ router.post("/sda", requireAuth, async (req, res) => {
 			englishTitleOld: req.body.englishTitleOld || "",
 			oldHymnalLyrics: req.body.oldHymnalLyrics || "",
 			category: req.body.category || "",
+			key: req.body.key || "",
 			sheet_music: Array.isArray(req.body.sheet_music) ? req.body.sheet_music : [],
 			audio: req.body.audio || "",
 			createdBy: actor,
@@ -376,6 +387,7 @@ router.put("/hagerigna/:id", requireAuth, async (req, res) => {
 			...(req.body.trackCount !== undefined ? { trackCount: Number(req.body.trackCount) || 0 } : {}),
 			...(req.body.tracks !== undefined ? { tracks: normalizeTracks(req.body.tracks) } : {}),
 			...(req.body.category !== undefined ? { category: req.body.category } : {}),
+			...(req.body.key !== undefined ? { key: req.body.key } : {}),
 			...(req.body.sheet_music !== undefined ? { sheet_music: req.body.sheet_music } : {}),
 			...(req.body.audio !== undefined ? { audio: req.body.audio } : {}),
 			updatedBy: actor,
@@ -411,6 +423,7 @@ router.put("/sda/:id", requireAuth, async (req, res) => {
 			...(req.body.englishTitleOld !== undefined ? { englishTitleOld: req.body.englishTitleOld } : {}),
 			...(req.body.oldHymnalLyrics !== undefined ? { oldHymnalLyrics: req.body.oldHymnalLyrics } : {}),
 			...(req.body.category !== undefined ? { category: req.body.category } : {}),
+			...(req.body.key !== undefined ? { key: req.body.key } : {}),
 			...(req.body.sheet_music !== undefined ? { sheet_music: req.body.sheet_music } : {}),
 			...(req.body.audio !== undefined ? { audio: req.body.audio } : {}),
 			updatedBy: actor,

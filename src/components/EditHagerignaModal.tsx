@@ -12,6 +12,7 @@ interface EditHagerignaModalProps {
 }
 
 const showRealLineBreaks = (value?: string) => (value || '').replace(/\\n/g, '\n');
+const SCALE_OPTIONS = ['C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B'];
 
 const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
   isOpen,
@@ -29,6 +30,7 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
     trackCount: 0,
     tracks: [] as HagerignaAlbumTrack[],
     category: '',
+    key: '',
     sheet_music: [] as string[],
     audio: '',
   });
@@ -50,9 +52,11 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
         trackCount: hymn.tracks?.length || hymn.trackCount || 0,
         tracks: (hymn.tracks || []).map((track) => ({
           ...track,
+          key: track.key || '',
           song: showRealLineBreaks(track.song),
         })),
         category: hymn.category || '',
+        key: hymn.key || '',
         sheet_music: hymn.sheet_music || [],
         audio: hymn.audio || '',
       });
@@ -87,6 +91,7 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
         trackNumber: index + 1,
         title: track.title.trim(),
         song: track.song.trim(),
+        key: track.key || '',
         audio: track.audio || '',
       }));
       onSubmit({
@@ -118,6 +123,7 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
       trackCount: 0,
       tracks: [],
       category: '',
+      key: '',
       sheet_music: [],
       audio: '',
     });
@@ -325,6 +331,19 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
                         />
                       </div>
                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Key</label>
+                        <select
+                          value={track.key || ''}
+                          onChange={(event) => updateTrack(track.id, 'key', event.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          <option value="">Select a key</option>
+                          {SCALE_OPTIONS.map((scale) => (
+                            <option key={scale} value={scale}>{scale}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Audio File</label>
                         <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 cursor-pointer">
                           <Upload className="w-4 h-4" />
@@ -481,6 +500,23 @@ const EditHagerignaModal: React.FC<EditHagerignaModalProps> = ({
                 <option value="">Select a category</option>
                 {HYMN_CATEGORIES.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Key */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Key
+              </label>
+              <select
+                value={formData.key}
+                onChange={(e) => handleChange('key', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">Select a key</option>
+                {SCALE_OPTIONS.map(scale => (
+                  <option key={scale} value={scale}>{scale}</option>
                 ))}
               </select>
             </div>

@@ -87,6 +87,7 @@ export const appendToHagerignaFile = async (newHymn) => {
 
 	// Get or create arrays for new fields
 	const categoryArray = getOrCreateArray(data, "category");
+	const keyArray = getOrCreateArray(data, "key");
 	const sheetMusicArray = getOrCreateArray(data, "sheet_music");
 	const audioArray = getOrCreateArray(data, "audio");
 	const isAlbumArray = getOrCreateArray(data, "is_album");
@@ -99,6 +100,7 @@ export const appendToHagerignaFile = async (newHymn) => {
 	songArray.item.push(newHymn.song || "");
 	titleArray.item.push(newHymn.title || "");
 	categoryArray.item.push(newHymn.category || "");
+	keyArray.item.push(newHymn.key || "");
 	sheetMusicArray.item.push(JSON.stringify(newHymn.sheet_music || []));
 	audioArray.item.push(newHymn.audio || "");
 	isAlbumArray.item.push(newHymn.isAlbum ? "true" : "false");
@@ -135,6 +137,7 @@ export const appendToSDAFile = async (newHymn) => {
 
 	// Get or create arrays for new fields
 	const categoryArray = getOrCreateArray(data, "category");
+	const keyArray = getOrCreateArray(data, "key");
 	const sheetMusicArray = getOrCreateArray(data, "sheet_music");
 	const audioArray = getOrCreateArray(data, "audio");
 
@@ -144,6 +147,7 @@ export const appendToSDAFile = async (newHymn) => {
 	englishTitleArray.item.push(newHymn.englishTitleOld || "");
 	oldLyricsArray.item.push(newHymn.oldHymnalLyrics || "");
 	categoryArray.item.push(newHymn.category || "");
+	keyArray.item.push(newHymn.key || "");
 	sheetMusicArray.item.push(JSON.stringify(newHymn.sheet_music || []));
 	audioArray.item.push(newHymn.audio || "");
 
@@ -173,6 +177,7 @@ export const updateHagerignaFile = async (id, updatedHymn) => {
 
 	// Get or create arrays for new fields
 	const categoryArray = getOrCreateArray(data, "category");
+	const keyArray = getOrCreateArray(data, "key");
 	const sheetMusicArray = getOrCreateArray(data, "sheet_music");
 	const audioArray = getOrCreateArray(data, "audio");
 	const isAlbumArray = getOrCreateArray(data, "is_album");
@@ -183,6 +188,7 @@ export const updateHagerignaFile = async (id, updatedHymn) => {
 
 	// Ensure arrays are long enough
 	while (categoryArray.item.length <= index) categoryArray.item.push("");
+	while (keyArray.item.length <= index) keyArray.item.push("");
 	while (sheetMusicArray.item.length <= index) sheetMusicArray.item.push("[]");
 	while (audioArray.item.length <= index) audioArray.item.push("");
 	while (isAlbumArray.item.length <= index) isAlbumArray.item.push("false");
@@ -198,6 +204,8 @@ export const updateHagerignaFile = async (id, updatedHymn) => {
 		titleArray.item[index] = updatedHymn.title;
 	if (updatedHymn.category !== undefined)
 		categoryArray.item[index] = updatedHymn.category || "";
+	if (updatedHymn.key !== undefined)
+		keyArray.item[index] = updatedHymn.key || "";
 	if (updatedHymn.sheet_music !== undefined)
 		sheetMusicArray.item[index] = JSON.stringify(updatedHymn.sheet_music || []);
 	if (updatedHymn.audio !== undefined)
@@ -240,6 +248,7 @@ export const updateHagerignaFile = async (id, updatedHymn) => {
 		trackCount: Number(trackCountArray.item[index]) || undefined,
 		tracks: tracks.length > 0 ? tracks : undefined,
 		category: categoryArray.item[index] || undefined,
+		key: keyArray.item[index] || undefined,
 		sheet_music: sheetMusic.length > 0 ? sheetMusic : undefined,
 		audio: audioArray.item[index] || undefined,
 	};
@@ -278,11 +287,13 @@ export const updateSDAFile = async (id, updatedHymn) => {
 
 	// Get or create arrays for new fields
 	const categoryArray = getOrCreateArray(data, "category");
+	const keyArray = getOrCreateArray(data, "key");
 	const sheetMusicArray = getOrCreateArray(data, "sheet_music");
 	const audioArray = getOrCreateArray(data, "audio");
 
 	// Ensure arrays are long enough
 	while (categoryArray.item.length <= index) categoryArray.item.push("");
+	while (keyArray.item.length <= index) keyArray.item.push("");
 	while (sheetMusicArray.item.length <= index) sheetMusicArray.item.push("[]");
 	while (audioArray.item.length <= index) audioArray.item.push("");
 
@@ -298,6 +309,8 @@ export const updateSDAFile = async (id, updatedHymn) => {
 		oldLyricsArray.item[index] = updatedHymn.oldHymnalLyrics;
 	if (updatedHymn.category !== undefined)
 		categoryArray.item[index] = updatedHymn.category || "";
+	if (updatedHymn.key !== undefined)
+		keyArray.item[index] = updatedHymn.key || "";
 	if (updatedHymn.sheet_music !== undefined)
 		sheetMusicArray.item[index] = JSON.stringify(updatedHymn.sheet_music || []);
 	if (updatedHymn.audio !== undefined)
@@ -321,6 +334,7 @@ export const updateSDAFile = async (id, updatedHymn) => {
 		englishTitleOld: englishTitleArray.item[index],
 		oldHymnalLyrics: oldLyricsArray.item[index],
 		category: categoryArray.item[index] || undefined,
+		key: keyArray.item[index] || undefined,
 		sheet_music: sheetMusic.length > 0 ? sheetMusic : undefined,
 		audio: audioArray.item[index] || undefined,
 	};
@@ -344,6 +358,7 @@ export const deleteFromHagerignaFile = async (id) => {
 	}
 
 	const categoryArray = findArrayByName(data, "category");
+	const keyArray = findArrayByName(data, "key");
 	const sheetMusicArray = findArrayByName(data, "sheet_music");
 	const audioArray = findArrayByName(data, "audio");
 	const isAlbumArray = findArrayByName(data, "is_album");
@@ -356,6 +371,7 @@ export const deleteFromHagerignaFile = async (id) => {
 	songArray.item.splice(index, 1);
 	titleArray.item.splice(index, 1);
 	if (categoryArray) categoryArray.item.splice(index, 1);
+	if (keyArray) keyArray.item.splice(index, 1);
 	if (sheetMusicArray) sheetMusicArray.item.splice(index, 1);
 	if (audioArray) audioArray.item.splice(index, 1);
 	if (isAlbumArray) isAlbumArray.item.splice(index, 1);
@@ -399,6 +415,7 @@ export const deleteFromSDAFile = async (id) => {
 	}
 
 	const categoryArray = findArrayByName(data, "category");
+	const keyArray = findArrayByName(data, "key");
 	const sheetMusicArray = findArrayByName(data, "sheet_music");
 	const audioArray = findArrayByName(data, "audio");
 
@@ -408,6 +425,7 @@ export const deleteFromSDAFile = async (id) => {
 	englishTitleArray.item.splice(index, 1);
 	oldLyricsArray.item.splice(index, 1);
 	if (categoryArray) categoryArray.item.splice(index, 1);
+	if (keyArray) keyArray.item.splice(index, 1);
 	if (sheetMusicArray) sheetMusicArray.item.splice(index, 1);
 	if (audioArray) audioArray.item.splice(index, 1);
 

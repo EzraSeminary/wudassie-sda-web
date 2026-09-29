@@ -65,6 +65,8 @@ const mapHagerignaJson = async () => {
 		[];
 	const categoryArray =
 		data.resources?.array?.find((arr) => arr._name === "category")?.item || [];
+	const keyArray =
+		data.resources?.array?.find((arr) => arr._name === "key")?.item || [];
 	const sheetMusicArray =
 		data.resources?.array?.find((arr) => arr._name === "sheet_music")?.item || [];
 	const audioArray =
@@ -79,6 +81,7 @@ const mapHagerignaJson = async () => {
 			song: songArray[i] || "",
 			title: titleArray[i] || "",
 			category: categoryArray[i] || "",
+			key: keyArray[i] || "",
 			sheet_music: parseSheetMusic(sheetMusicArray[i]),
 			audio: audioArray[i] || "",
 		});
@@ -102,6 +105,8 @@ const mapSdaJson = async () => {
 		data.resources?.array?.find((arr) => arr._name === "old_song")?.item || [];
 	const categoryArray =
 		data.resources?.array?.find((arr) => arr._name === "category")?.item || [];
+	const keyArray =
+		data.resources?.array?.find((arr) => arr._name === "key")?.item || [];
 	const sheetMusicArray =
 		data.resources?.array?.find((arr) => arr._name === "sheet_music")?.item || [];
 	const audioArray =
@@ -124,6 +129,7 @@ const mapSdaJson = async () => {
 			englishTitleOld: englishTitleArray[i] || "",
 			oldHymnalLyrics: oldLyricsArray[i] || "",
 			category: categoryArray[i] || "",
+			key: keyArray[i] || "",
 			sheet_music: parseSheetMusic(sheetMusicArray[i]),
 			audio: audioArray[i] || "",
 		});

@@ -12,6 +12,7 @@ interface EditSDAModalProps {
 }
 
 const showRealLineBreaks = (value?: string) => (value || '').replace(/\\n/g, '\n');
+const SCALE_OPTIONS = ['C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B'];
 
 const EditSDAModal: React.FC<EditSDAModalProps> = ({
   isOpen,
@@ -24,6 +25,7 @@ const EditSDAModal: React.FC<EditSDAModalProps> = ({
     newHymnalLyrics: '',
     englishTitleOld: '',
     category: '',
+    key: '',
     sheet_music: [] as string[],
     audio: '',
   });
@@ -39,6 +41,7 @@ const EditSDAModal: React.FC<EditSDAModalProps> = ({
         newHymnalLyrics: showRealLineBreaks(hymn.newHymnalLyrics),
         englishTitleOld: hymn.englishTitleOld || '',
         category: hymn.category || '',
+        key: hymn.key || '',
         sheet_music: hymn.sheet_music || [],
         audio: hymn.audio || '',
       });
@@ -64,6 +67,7 @@ const EditSDAModal: React.FC<EditSDAModalProps> = ({
       oldHymnalTitle: '', // Keep for backend compatibility
       oldHymnalLyrics: '', // Keep for backend compatibility
       category: formData.category || undefined,
+      key: formData.key || undefined,
       sheet_music: formData.sheet_music.length > 0 ? formData.sheet_music : undefined,
       audio: formData.audio || undefined,
     });
@@ -76,6 +80,7 @@ const EditSDAModal: React.FC<EditSDAModalProps> = ({
       newHymnalLyrics: '',
       englishTitleOld: '',
       category: '',
+      key: '',
       sheet_music: [],
       audio: '',
     });
@@ -243,6 +248,23 @@ const EditSDAModal: React.FC<EditSDAModalProps> = ({
                 <option value="">Select a category</option>
                 {HYMN_CATEGORIES.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Key */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Key
+              </label>
+              <select
+                value={formData.key}
+                onChange={(e) => handleChange('key', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select a key</option>
+                {SCALE_OPTIONS.map(scale => (
+                  <option key={scale} value={scale}>{scale}</option>
                 ))}
               </select>
             </div>

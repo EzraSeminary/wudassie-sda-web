@@ -37,6 +37,7 @@ export interface HagerignaHymn {
   trackCount?: number;
   tracks?: HagerignaAlbumTrack[];
   category?: string;
+  key?: string;
   sheet_music?: string[];
   audio?: string;
   createdBy?: AuditUser | null;
@@ -50,6 +51,7 @@ export interface HagerignaAlbumTrack {
   trackNumber: number;
   title: string;
   song: string;
+  key?: string;
   audio?: string;
 }
 
@@ -61,6 +63,7 @@ export interface SDAHymn {
   englishTitleOld: string;
   oldHymnalLyrics: string;
   category?: string;
+  key?: string;
   sheet_music?: string[];
   audio?: string;
   createdBy?: AuditUser | null;

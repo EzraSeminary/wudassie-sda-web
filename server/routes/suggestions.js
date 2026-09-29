@@ -28,6 +28,7 @@ const allowedFields = {
 		"song",
 		"title",
 		"category",
+		"key",
 		"sheet_music",
 		"audio",
 		"isAlbum",
@@ -43,6 +44,7 @@ const allowedFields = {
 		"englishTitleOld",
 		"oldHymnalLyrics",
 		"category",
+		"key",
 		"sheet_music",
 		"audio",
 	],
@@ -126,12 +128,14 @@ const getJsonHagerignaById = async (id) => {
 	if (index >= Math.max(artistArray.length, songArray.length, titleArray.length)) return null;
 	const tracksArray = findArray("tracks");
 	const sheetMusicArray = findArray("sheet_music");
+	const keyArray = findArray("key");
 	return {
 		id,
 		artist: artistArray[index] || "",
 		song: songArray[index] || "",
 		title: titleArray[index] || "",
 		category: findArray("category")[index] || "",
+		key: keyArray[index] || "",
 		sheet_music: parseJsonArrayValue(sheetMusicArray[index]),
 		audio: findArray("audio")[index] || "",
 		isAlbum: findArray("is_album")[index] === "true",
@@ -188,6 +192,7 @@ const applyMongoSuggestion = async (suggestion, actor) => {
 		...currentTrack,
 		title: requested.title ?? currentTrack.title,
 		song: requested.song ?? currentTrack.song,
+		key: requested.key ?? currentTrack.key,
 		audio: requested.audio ?? currentTrack.audio,
 	};
 	await parent.save();
@@ -213,6 +218,7 @@ const applyJsonSuggestion = async (suggestion, actor) => {
 					...track,
 					title: requested.title ?? track.title,
 					song: requested.song ?? track.song,
+					key: requested.key ?? track.key,
 					audio: requested.audio ?? track.audio,
 				}
 				: track

@@ -6,7 +6,9 @@
 	"main": "index.js",
 	"scripts": {
 		"start": "node index.js",
-		"dev": "node index.js"
+		"dev": "node index.js",
+		"import:sda-sheet-music": "node scripts/importSdaSheetMusic.js",
+		"sync:sda-media:mongo": "node scripts/syncSdaMediaToMongo.js"
 	},
 	"dependencies": {
 		"bcryptjs": "^3.0.3",
