@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Disc3, Music, Plus, BookOpen, Heart, Youtube, Trash2, LogOut, ShieldPlus, MessageSquareText } from 'lucide-react';
+import { Disc3, Music, Plus, BookOpen, Heart, Youtube, Trash2, LogOut, ShieldPlus, MessageSquareText, KeyRound } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import HagerignaTable from './HagerignaTable';
 import SDATable from './SDATable';
@@ -13,10 +13,13 @@ import EditSDAModal from './EditSDAModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import EncoderManagementPanel from './EncoderManagementPanel';
 import SuggestionsPanel from './SuggestionsPanel';
+import BulkKeyEditor from './BulkKeyEditor';
 import LoadingSpinner from './ui/LoadingSpinner';
 import { useToast } from './ui/Toaster';
-import { hymnalService } from '../services/hymnalService';
+import { HymnKeyUpdate, hymnalService } from '../services/hymnalService';
 import { Category, HagerignaHymn, HymnEditSuggestion, ManagedUser, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
+
+type AdminSection = 'sda' | 'hagerigna' | 'youtube' | 'encoders' | 'suggestions' | 'keys';
 
 const extractVideoId = (url: string) => {
   const trimmed = url.trim();
@@ -52,7 +55,13 @@ const sortByHymnNumber = <T extends HagerignaHymn | SDAHymn>(hymns: T[]) =>
 const MusicDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const [activeSection, setActiveSection] = useState<'sda' | 'hagerigna' | 'youtube' | 'encoders' | 'suggestions'>('sda');
+  const [activeSection, setActiveSection] = useState<AdminSection>(() => {
+    const hashSection = window.location.hash.replace('#', '') as AdminSection;
+    if (['sda', 'hagerigna', 'youtube', 'encoders', 'suggestions', 'keys'].includes(hashSection)) {
+      return hashSection;
+    }
+    return 'sda';
+  });
   const [activeHymnal, setActiveHymnal] = useState<HymnalType>('sda');
   const [hagerignaHymns, setHagerignaHymns] = useState<HagerignaHymn[]>([]);
   const [sdaHymns, setSdaHymns] = useState<SDAHymn[]>([]);
@@ -72,6 +81,7 @@ const MusicDashboard: React.FC = () => {
   const [suggestions, setSuggestions] = useState<HymnEditSuggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [applyingSuggestionId, setApplyingSuggestionId] = useState<string | null>(null);
+  const [savingKeys, setSavingKeys] = useState(false);
   
   // Modal states
   const [showAddHagerignaModal, setShowAddHagerignaModal] = useState(false);
@@ -88,6 +98,11 @@ const MusicDashboard: React.FC = () => {
   const [selectedSDAHymn, setSelectedSDAHymn] = useState<SDAHymn | null>(null);
   
   const { showToast } = useToast();
+
+  const switchSection = (section: AdminSection) => {
+    setActiveSection(section);
+    window.history.replaceState(null, '', `#${section}`);
+  };
 
   const loadHymns = useCallback(async () => {
     try {
@@ -303,6 +318,20 @@ const MusicDashboard: React.FC = () => {
     }
   };
 
+  const handleBulkKeySave = async (updates: HymnKeyUpdate[]) => {
+    try {
+      setSavingKeys(true);
+      const result = await hymnalService.bulkUpdateHymnKeys(updates);
+      await loadHymns();
+      showToast(`Saved keys for ${result.updatedCount} songs`, 'success');
+    } catch (error) {
+      console.error('Failed to save hymn keys:', error);
+      showToast('Failed to save hymn keys', 'error');
+    } finally {
+      setSavingKeys(false);
+    }
+  };
+
   useEffect(() => {
     loadHymns();
   }, [loadHymns]);
@@ -322,6 +351,18 @@ const MusicDashboard: React.FC = () => {
   useEffect(() => {
     loadSuggestions();
   }, [loadSuggestions]);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hashSection = window.location.hash.replace('#', '') as AdminSection;
+      if (['sda', 'hagerigna', 'youtube', 'encoders', 'suggestions', 'keys'].includes(hashSection)) {
+        setActiveSection(hashSection);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   useEffect(() => {
     const lowerQuery = searchQuery.trim().toLowerCase();
@@ -552,13 +593,15 @@ const MusicDashboard: React.FC = () => {
                     ? `Review user suggestions • ${suggestions.filter((entry) => entry.status === 'pending').length} pending`
                     : activeSection === 'youtube'
                     ? `Manage your YouTube links • ${youtubeLinks.length} links`
+                    : activeSection === 'keys'
+                    ? `Set song keys in bulk • ${sdaHymns.length + hagerignaHymns.length} hymns`
                     : `Manage your hymnal collections • ${getCurrentCount()} hymns`}
                 </p>
               </div>
             </div>
             
             <div className="flex items-center gap-3">
-              {activeSection !== 'youtube' && activeSection !== 'encoders' && activeSection !== 'suggestions' && (
+              {activeSection !== 'youtube' && activeSection !== 'encoders' && activeSection !== 'suggestions' && activeSection !== 'keys' && (
                 <>
                   <button
                     onClick={() => activeHymnal === 'hagerigna' ? setShowAddHagerignaModal(true) : setShowAddSDAModal(true)}
@@ -601,7 +644,7 @@ const MusicDashboard: React.FC = () => {
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <button
               onClick={() => {
-                setActiveSection('sda');
+                switchSection('sda');
                 setActiveHymnal('sda');
               }}
               className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
@@ -616,7 +659,7 @@ const MusicDashboard: React.FC = () => {
             
             <button
               onClick={() => {
-                setActiveSection('hagerigna');
+                switchSection('hagerigna');
                 setActiveHymnal('hagerigna');
               }}
               className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
@@ -631,7 +674,7 @@ const MusicDashboard: React.FC = () => {
 
             {isAdmin && (
               <button
-                onClick={() => setActiveSection('youtube')}
+                onClick={() => switchSection('youtube')}
                 className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
                   activeSection === 'youtube'
                     ? 'bg-slate-950 text-white shadow-lg'
@@ -643,9 +686,21 @@ const MusicDashboard: React.FC = () => {
               </button>
             )}
 
+            <button
+              onClick={() => switchSection('keys')}
+              className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
+                activeSection === 'keys'
+                  ? 'bg-slate-950 text-white shadow-lg'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              <KeyRound className="w-6 h-6" />
+              Keys
+            </button>
+
             {isAdmin && (
               <button
-                onClick={() => setActiveSection('encoders')}
+                onClick={() => switchSection('encoders')}
                 className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
                   activeSection === 'encoders'
                     ? 'bg-slate-950 text-white shadow-lg'
@@ -659,7 +714,7 @@ const MusicDashboard: React.FC = () => {
 
             {isAdmin && (
               <button
-                onClick={() => setActiveSection('suggestions')}
+                onClick={() => switchSection('suggestions')}
                 className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
                   activeSection === 'suggestions'
                     ? 'bg-slate-950 text-white shadow-lg'
@@ -674,7 +729,7 @@ const MusicDashboard: React.FC = () => {
         </div>
 
         {/* Search and Filters */}
-        {activeSection !== 'youtube' && activeSection !== 'encoders' && activeSection !== 'suggestions' && (
+        {activeSection !== 'youtube' && activeSection !== 'encoders' && activeSection !== 'suggestions' && activeSection !== 'keys' && (
           <HymnFilters
             hymnLabel={activeHymnal === 'sda' ? 'SDA hymns' : 'Hagerigna hymns'}
             categories={categories}
@@ -804,8 +859,17 @@ const MusicDashboard: React.FC = () => {
           />
         )}
 
+        {activeSection === 'keys' && (
+          <BulkKeyEditor
+            sdaHymns={sdaHymns}
+            hagerignaHymns={hagerignaHymns}
+            saving={savingKeys}
+            onSave={handleBulkKeySave}
+          />
+        )}
+
                 {/* Hymns Display */}
-        {activeSection !== 'youtube' && activeSection !== 'encoders' && activeSection !== 'suggestions' && (
+        {activeSection !== 'youtube' && activeSection !== 'encoders' && activeSection !== 'suggestions' && activeSection !== 'keys' && (
           <div className="admin-panel rounded-2xl overflow-hidden">
           {(() => {
             // console.log('Rendering hymns display. Active hymnal:', activeHymnal, 'Current count:', getCurrentCount(), 'Filtered hymns:', activeHymnal === 'hagerigna' ? filteredHagerignaHymns.length : filteredSdaHymns.length);

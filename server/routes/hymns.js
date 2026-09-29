@@ -379,6 +379,86 @@ router.post("/sda", requireAuth, async (req, res) => {
 	}
 });
 
+const bulkUpdateHymnKeys = async (req, res) => {
+	try {
+		const updates = Array.isArray(req.body?.updates) ? req.body.updates : [];
+		const actor = getAuditActor(req);
+
+		if (updates.length === 0) {
+			return res.status(400).json({ error: "At least one key update is required" });
+		}
+
+		const cleanUpdates = updates.map((entry) => ({
+			type: String(entry.type || ""),
+			id: String(entry.id || ""),
+			parentId: String(entry.parentId || ""),
+			key: String(entry.key || ""),
+		}));
+
+		if (!isMongoConnected()) {
+			let updatedCount = 0;
+			for (const entry of cleanUpdates) {
+				if (entry.type === "sda" && entry.id) {
+					await updateSDAFile(entry.id, { key: entry.key, updatedBy: actor });
+					updatedCount += 1;
+				} else if (entry.type === "hagerigna" && entry.id) {
+					await updateHagerignaFile(entry.id, { key: entry.key, updatedBy: actor });
+					updatedCount += 1;
+				} else if (entry.type === "hagerignaTrack" && entry.parentId && entry.id) {
+					const data = await readJsonFile("HagerignaData.json");
+					const tracksArray = data.resources?.array?.find((arr) => arr._name === "tracks")?.item || [];
+					const index = Number.parseInt(entry.parentId.replace("hagerigna-", ""), 10);
+					const tracks = parseTracks(tracksArray[index]);
+					const nextTracks = tracks.map((track) =>
+						String(track.id || track.trackNumber) === entry.id
+							? { ...track, key: entry.key }
+							: track
+					);
+					await updateHagerignaFile(entry.parentId, { tracks: nextTracks, updatedBy: actor });
+					updatedCount += 1;
+				}
+			}
+			return res.json({ updatedCount });
+		}
+
+		let updatedCount = 0;
+		for (const entry of cleanUpdates) {
+			if (entry.type === "sda" && entry.id) {
+				const result = await SDAHymn.updateOne(
+					{ id: entry.id },
+					{ $set: { key: entry.key, updatedBy: actor } }
+				);
+				updatedCount += result.matchedCount || 0;
+			} else if (entry.type === "hagerigna" && entry.id) {
+				const result = await HagerignaHymn.updateOne(
+					{ id: entry.id },
+					{ $set: { key: entry.key, updatedBy: actor } }
+				);
+				updatedCount += result.matchedCount || 0;
+			} else if (entry.type === "hagerignaTrack" && entry.parentId && entry.id) {
+				const result = await HagerignaHymn.updateOne(
+					{ id: entry.parentId, "tracks.id": entry.id },
+					{
+						$set: {
+							"tracks.$.key": entry.key,
+							updatedBy: actor,
+						},
+					}
+				);
+				updatedCount += result.matchedCount || 0;
+			}
+		}
+
+		res.json({ updatedCount });
+	} catch (error) {
+		console.error("Error bulk updating hymn keys:", error);
+		res.status(500).json({ error: "Failed to update hymn keys" });
+	}
+};
+
+router.put("/keys/bulk", requireAuth, bulkUpdateHymnKeys);
+router.put("/sda/keys/bulk", requireAuth, bulkUpdateHymnKeys);
+
 router.put("/hagerigna/:id", requireAuth, async (req, res) => {
 	try {
 		const actor = getAuditActor(req);

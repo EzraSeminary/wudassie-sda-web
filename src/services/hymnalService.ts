@@ -19,6 +19,13 @@ interface AddYouTubeLinksResult {
   duplicates: string[];
 }
 
+export interface HymnKeyUpdate {
+  type: 'sda' | 'hagerigna' | 'hagerignaTrack';
+  id: string;
+  parentId?: string;
+  key: string;
+}
+
 const getHymnOrder = (id: string) => {
   const prefixedMatch = String(id || '').match(/^(?:sda|hagerigna)-(\d+)/i);
   if (prefixedMatch) return Number(prefixedMatch[1]);
@@ -198,6 +205,30 @@ class HymnalService {
       return await response.json();
     } catch (error) {
       console.error(`Error searching ${type} hymns:`, error);
+      throw error;
+    }
+  }
+
+  async bulkUpdateHymnKeys(updates: HymnKeyUpdate[]): Promise<{ updatedCount: number }> {
+    try {
+      const requestOptions = {
+        ...this.fetchOptions,
+        method: 'PUT',
+        body: JSON.stringify({ updates }),
+      };
+
+      let response = await fetch(`${this.baseUrl}/keys/bulk`, requestOptions);
+      if (response.status === 404) {
+        response = await fetch(`${this.baseUrl}/sda/keys/bulk`, requestOptions);
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to update hymn keys');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error bulk updating hymn keys:', error);
       throw error;
     }
   }
