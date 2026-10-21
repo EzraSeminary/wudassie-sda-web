@@ -11,8 +11,10 @@ import uploadRoutes from "./routes/upload.js";
 import youtubeLinksRoutes from "./routes/youtubeLinks.js";
 import authRoutes, { seedAdminUser } from "./routes/auth.js";
 import suggestionRoutes from "./routes/suggestions.js";
+import musicRoutes from "./routes/music.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { connectToMongo } from "./db/mongo.js";
+import { syncImageKitMusic } from "./services/imageKitMusicSync.js";
 
 // Load .env file - try multiple possible paths
 const __filename = fileURLToPath(import.meta.url);
@@ -124,7 +126,16 @@ if (hasClientBuild) {
 
 // Connect to MongoDB if MONGODB_URI is set (for production / persistent YouTube links)
 connectToMongo()
-	.then(() => seedAdminUser())
+	.then(async () => {
+		await seedAdminUser();
+		const intervalMinutes = Number.parseInt(process.env.MUSIC_SYNC_INTERVAL_MINUTES || "", 10);
+		if (Number.isFinite(intervalMinutes) && intervalMinutes >= 15) {
+			const runSync = () => syncImageKitMusic().catch((error) => console.error("Music ImageKit sync error:", error.message));
+			runSync();
+			setInterval(runSync, intervalMinutes * 60 * 1000).unref();
+			console.log(`🎵 Music ImageKit sync scheduled every ${intervalMinutes} minutes.`);
+		}
+	})
 	.catch((err) => console.error("Mongo connect error:", err));
 
 // Routes
@@ -134,6 +145,7 @@ app.use("/api", hymnRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api", youtubeLinksRoutes);
 app.use("/api", suggestionRoutes);
+app.use("/api/music", musicRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

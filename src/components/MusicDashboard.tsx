@@ -14,12 +14,13 @@ import DeleteConfirmModal from './DeleteConfirmModal';
 import EncoderManagementPanel from './EncoderManagementPanel';
 import SuggestionsPanel from './SuggestionsPanel';
 import BulkKeyEditor from './BulkKeyEditor';
+import MusicManagementPanel from './MusicManagementPanel';
 import LoadingSpinner from './ui/LoadingSpinner';
 import { useToast } from './ui/Toaster';
 import { HymnKeyUpdate, hymnalService } from '../services/hymnalService';
 import { Category, HagerignaHymn, HymnEditSuggestion, ManagedUser, SDAHymn, HymnalType, YouTubeLink } from '../types/Song';
 
-type AdminSection = 'sda' | 'hagerigna' | 'youtube' | 'encoders' | 'suggestions' | 'keys';
+type AdminSection = 'sda' | 'hagerigna' | 'youtube' | 'encoders' | 'suggestions' | 'keys' | 'music';
 
 const extractVideoId = (url: string) => {
   const trimmed = url.trim();
@@ -57,7 +58,7 @@ const MusicDashboard: React.FC = () => {
   const isAdmin = user?.role === 'admin';
   const [activeSection, setActiveSection] = useState<AdminSection>(() => {
     const hashSection = window.location.hash.replace('#', '') as AdminSection;
-    if (['sda', 'hagerigna', 'youtube', 'encoders', 'suggestions', 'keys'].includes(hashSection)) {
+    if (['sda', 'hagerigna', 'youtube', 'encoders', 'suggestions', 'keys', 'music'].includes(hashSection)) {
       return hashSection;
     }
     return 'sda';
@@ -355,7 +356,7 @@ const MusicDashboard: React.FC = () => {
   useEffect(() => {
     const handleHashChange = () => {
       const hashSection = window.location.hash.replace('#', '') as AdminSection;
-      if (['sda', 'hagerigna', 'youtube', 'encoders', 'suggestions', 'keys'].includes(hashSection)) {
+      if (['sda', 'hagerigna', 'youtube', 'encoders', 'suggestions', 'keys', 'music'].includes(hashSection)) {
         setActiveSection(hashSection);
       }
     };
@@ -674,6 +675,20 @@ const MusicDashboard: React.FC = () => {
 
             {isAdmin && (
               <button
+                onClick={() => switchSection('music')}
+                className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
+                  activeSection === 'music'
+                    ? 'bg-slate-950 text-white shadow-lg'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Disc3 className="w-6 h-6" />
+                Music Library
+              </button>
+            )}
+
+            {isAdmin && (
+              <button
                 onClick={() => switchSection('youtube')}
                 className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-200 ${
                   activeSection === 'youtube'
@@ -729,7 +744,7 @@ const MusicDashboard: React.FC = () => {
         </div>
 
         {/* Search and Filters */}
-        {activeSection !== 'youtube' && activeSection !== 'encoders' && activeSection !== 'suggestions' && activeSection !== 'keys' && (
+        {activeSection !== 'youtube' && activeSection !== 'encoders' && activeSection !== 'suggestions' && activeSection !== 'keys' && activeSection !== 'music' && (
           <HymnFilters
             hymnLabel={activeHymnal === 'sda' ? 'SDA hymns' : 'Hagerigna hymns'}
             categories={categories}
@@ -838,6 +853,8 @@ const MusicDashboard: React.FC = () => {
           )}
         </div>
         )}
+
+        {activeSection === 'music' && isAdmin && <MusicManagementPanel />}
 
         {activeSection === 'encoders' && isAdmin && (
           <EncoderManagementPanel

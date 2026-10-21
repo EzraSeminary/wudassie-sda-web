@@ -5,6 +5,9 @@ import PublicLandingPage from './components/PublicLandingPage';
 import ToastProvider from './components/ui/Toaster';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { hymnalService } from './services/hymnalService';
+import { musicService } from './services/musicService';
+import { MusicPlayerProvider } from './contexts/MusicPlayerContext';
+import MusicPlayer from './components/MusicPlayer';
 
 const AppContent: React.FC = () => {
   const { user, token, loading } = useAuth();
@@ -13,6 +16,7 @@ const AppContent: React.FC = () => {
   // Keep hymnalService token in sync
   useEffect(() => {
     hymnalService.setToken(token);
+    musicService.setToken(token);
   }, [token]);
 
   if (loading) {
@@ -47,9 +51,12 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <AppContent />
-      </ToastProvider>
+      <MusicPlayerProvider>
+        <ToastProvider>
+          <AppContent />
+          <MusicPlayer />
+        </ToastProvider>
+      </MusicPlayerProvider>
     </AuthProvider>
   );
 }

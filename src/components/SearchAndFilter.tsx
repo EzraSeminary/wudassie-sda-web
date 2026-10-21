@@ -3,7 +3,7 @@ import { Search, Filter, X } from 'lucide-react';
 
 interface SearchAndFilterProps {
   onSearch: (query: string) => void;
-  onFilter: (filters: any) => void;
+  onFilter: (filters: { genre: string; year: string; artist: string }) => void;
   onClearFilters: () => void;
 }
 
@@ -26,7 +26,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     onSearch(query);
   };
 
-  const handleFilterChange = (key: string, value: string) => {
+  const handleFilterChange = (key: keyof typeof filters, value: string) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     onFilter(newFilters);

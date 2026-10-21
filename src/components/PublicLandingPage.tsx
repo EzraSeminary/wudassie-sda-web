@@ -19,6 +19,7 @@ import HymnFilters, { HymnFilterState } from './HymnFilters';
 import HymnDetailModal from './HymnDetailModal';
 import SuggestEditModal from './SuggestEditModal';
 import { useToast } from './ui/Toaster';
+import MusicExperience from './MusicExperience';
 
 const defaultFilters: HymnFilterState = {
   category: '',
@@ -26,7 +27,7 @@ const defaultFilters: HymnFilterState = {
   hasSheetMusic: 'all',
 };
 
-type PublicSection = 'home' | 'sda' | 'hagerigna' | 'youtube';
+type PublicSection = 'home' | 'sda' | 'hagerigna' | 'youtube' | 'music';
 
 interface PublicLandingPageProps {
   onAdminLogin: () => void;
@@ -283,6 +284,9 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
   };
 
   const renderCollection = () => {
+    if (activeSection === 'music') {
+      return <MusicExperience />;
+    }
     if (activeSection === 'youtube') {
       return (
         <>
@@ -406,6 +410,10 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
               <Music className="w-4 h-4" />
               Hagerigna
             </button>
+            <button onClick={() => setActiveSection('music')} className={navButtonClass('music')}>
+              <Headphones className="w-4 h-4" />
+              Music
+            </button>
             <button onClick={() => setActiveSection('youtube')} className={navButtonClass('youtube')}>
               <Youtube className="w-4 h-4" />
               Videos
@@ -456,6 +464,13 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
                       >
                         Watch Worship Videos
                         <PlayCircle className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setActiveSection('music')}
+                        className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/10"
+                      >
+                        Open Music Player
+                        <Headphones className="w-4 h-4" />
                       </button>
                     </div>
 
@@ -568,7 +583,7 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
           <section className="max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-14">
             <div className="mb-8">
               <p className="text-xs uppercase tracking-[0.28em] text-[#c2b2a2]">
-                {activeSection === 'youtube' ? 'Worship Video Archive' : 'Public Hymn Library'}
+                {activeSection === 'youtube' ? 'Worship Video Archive' : activeSection === 'music' ? 'Church Music Library' : 'Public Hymn Library'}
               </p>
               <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
                 <div>
@@ -577,12 +592,12 @@ const PublicLandingPage: React.FC<PublicLandingPageProps> = ({ onAdminLogin }) =
                       ? 'SDA Hymnal'
                       : activeSection === 'hagerigna'
                         ? 'Hagerigna'
-                        : 'YouTube Worship Links'}
+                        : activeSection === 'music' ? 'Music' : 'YouTube Worship Links'}
                   </h2>
                   <p className="mt-3 text-[#cdbfb4]">
                     {activeSection === 'youtube'
                       ? 'Search by title, channel, video id, or direct YouTube link.'
-                      : 'Search by title, artist, lyrics, hymn number, or record id.'}
+                      : activeSection === 'music' ? 'Stream church music from the synchronized ImageKit library.' : 'Search by title, artist, lyrics, hymn number, or record id.'}
                   </p>
                 </div>
                 <button
